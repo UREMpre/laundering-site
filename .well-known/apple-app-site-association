@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["Y8TQ98F5N3.media.615.ledger"],
+        "components": [
+          { "/": "/plaid/oauth*", "comment": "Plaid OAuth return to Ledger" },
+          { "/": "/join*", "comment": "Share-setup invite; the payload is in the URL fragment and never reaches the server" }
+        ]
+      }
+    ]
+  }
+}
