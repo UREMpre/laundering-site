@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Do it yourself · Money Laundering</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font: 17px/1.6 -apple-system, system-ui, "Segoe UI", sans-serif; margin: 0; background: #fbfbfd; color: #1d1d1f; }
+    main { max-width: 42rem; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+    h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 .25rem; }
+    h2 { font-size: 1.2rem; margin: 2.2rem 0 .5rem; }
+    .meta { color: #6e6e73; font-size: 14px; margin-bottom: 2rem; }
+    .short { background: rgba(60,160,120,.10); border: 1px solid rgba(60,160,120,.35); border-radius: 14px; padding: 1rem 1.2rem; }
+    li { margin: .3rem 0; }
+    a { color: #0a66c2; }
+    footer { margin-top: 3rem; font-size: 14px; color: #6e6e73; }
+    @media (prefers-color-scheme: dark) { body { background: #0f1020; color: #f5f5f7; } .meta, footer { color: #9a9cb5; } a { color: #7fb7ff; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Link your banks yourself</h1>
+  <div class="meta">Money Laundering · the free, do-it-yourself way · Updated November 11, 2026</div>
+
+  <div class="short">
+    <b>The short version</b>
+    <ul>
+      <li>Money Laundering can link your banks for free if you bring your own keys from Plaid, the service banks use to share data with apps.</li>
+      <li>It takes about fifteen minutes, once. Your keys and your bank data stay on your iPhone; nothing passes through us.</li>
+      <li>Prefer not to? The subscription does all of this for you.</li>
+    </ul>
+  </div>
+
+  <h2>1. Make a free Plaid account</h2>
+  <p>Go to <a href="https://dashboard.plaid.com/signup">dashboard.plaid.com/signup</a> and sign up. Plaid will ask what you are building: a personal budgeting tool for your own accounts is a fine answer.</p>
+
+  <h2>2. Ask for real bank data</h2>
+  <p>A new Plaid account starts in a practice mode with fake banks. In the Plaid Dashboard, request access to real data (Plaid calls this Production; a free Trial plan covers up to 10 bank logins). Plaid asks a few questions about how the data is used and kept. Approval can take from minutes to a few days, and some banks (American Express, Chase and other banks that sign you in on their own site) need an extra approval that Plaid handles from the same page.</p>
+
+  <h2>3. Add the app's return address</h2>
+  <p>Some banks send you to their own site to sign in and then back to the app. For that to work, add this address in the Plaid Dashboard under <b>Developers → API → Allowed redirect URIs</b>:</p>
+  <p><code>https://ledger.615.media/plaid/oauth</code></p>
+
+  <h2>4. Copy your two keys</h2>
+  <p>In the Plaid Dashboard, open <b>Developers → Keys</b>. You need two things: the <b>client_id</b> and the <b>Production secret</b>. Treat the secret like a password: anyone who has it can read the banks linked to your Plaid account.</p>
+
+  <h2>5. Enter them in the app</h2>
+  <p>In Money Laundering, choose <b>Use your own keys</b> on the first screen (or Settings → Your own keys later). Paste the client_id and the secret, leave the environment on Production, and tap <b>Check &amp; save</b>. The app checks the keys with Plaid and stores them in the iPhone's Keychain.</p>
+
+  <h2>6. Link a bank</h2>
+  <p>Settings → Link a bank or card. Pick your bank and sign in on Plaid's screen. Your history arrives over the next few minutes.</p>
+
+  <h2>Good to know</h2>
+  <ul>
+    <li>On the free Trial plan each new bank login uses one of 10 slots, and removing a bank does not give the slot back. Adding more accounts from a bank you already linked does not use a slot.</li>
+    <li>To put the app on a partner's iPhone with the same setup, use Settings → Share setup. That link carries your Plaid secret, so show it as a QR code or AirDrop it; do not post it anywhere.</li>
+    <li>If you change the secret in the Plaid Dashboard, enter the new one in Settings → Your own keys.</li>
+    <li>Plaid's own help is at <a href="https://plaid.com/docs/">plaid.com/docs</a>. We cannot see or reset anything in your Plaid account.</li>
+  </ul>
+
+  <footer>615 Media Group, LLC · <a href="mailto:support@laundering.app">support@laundering.app</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/">Home</a></footer>
+</main>
+</body>
+</html>
