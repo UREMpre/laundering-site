@@ -63,7 +63,7 @@
     </ol>
     <a class="button" href="https://apps.apple.com/app/id6831441351">Get it on the App Store</a>
     <a class="button second" id="open" href="#">I have the app</a>
-    <p class="small">Nothing from this link is sent to this website: the username travels only in the part after the <code>#</code>.</p>
+    <p class="small">Nothing from this link is sent to this website: the username travels only in the part after the <code>#</code>. The page asks the app for that profile's public look, and nothing else.</p>
   </main>
   <script>
     var name = decodeURIComponent(location.hash.slice(1));
@@ -75,6 +75,7 @@
     document.getElementById('open').href = 'https://ledger.615.media/r#' + name;
   </script>
   <script src="washer.js"></script>
+  <script src="card.js"></script>
   <script src="punch.js"></script>
 </body>
 </html>
