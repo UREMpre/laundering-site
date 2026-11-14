@@ -14,6 +14,19 @@
     .name { font-weight: 800; }
     ol { text-align: left; padding-left: 1.3rem; }
     p.small { font-size: 14px; color: #6e6e73; }
+    p.punch { margin: 0.5rem 0 1.1rem; line-height: 1.15; }
+    p.punch .lead { display: block; font-size: 21px; font-weight: 700; }
+    p.punch .cat { --ink: #047857; --hot: #34d399; position: relative; display: inline-block; margin-top: 0.2rem; white-space: nowrap; font: 800 clamp(25px, 8.4vw, 33px)/1.15 ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif; color: var(--ink); }
+    p.punch .cat canvas { position: absolute; left: -6px; top: -6px; pointer-events: none; }
+    @media (prefers-reduced-motion: no-preference) {
+      p.punch .cat { animation: cat-in 0.9s 0.5s linear both; }
+      @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+        p.punch .cat { background: linear-gradient(100deg, var(--ink) 40%, var(--hot) 50%, var(--ink) 60%) 100% 0 / 300% 100% no-repeat; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: cat-in 0.9s 0.5s linear both, cat-shine 6s 0.05s linear infinite; }
+      }
+      p.punch .cat.hdr { animation: none; background: none; -webkit-text-fill-color: currentColor; }
+    }
+    @keyframes cat-in { from { clip-path: inset(-10% 100% -10% 0); } to { clip-path: inset(-10% 0 -10% 0); } }
+    @keyframes cat-shine { 0% { background-position: 100% 0; } 30%, 100% { background-position: 0 0; } }
     .art { position: relative; width: min(320px, 100vw); aspect-ratio: 320 / 232; left: 50%; translate: -50% 0; margin-bottom: 0.2rem; }
     .art::before { content: ""; position: absolute; inset: 4% 6%; border-radius: 50%; background: radial-gradient(closest-side, rgba(52, 211, 153, 0.20), rgba(167, 139, 250, 0.10) 65%, transparent); }
     .art canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -22,6 +35,7 @@
       a.button { background: #f5f5f7; color: #1d1d1f; }
       a.button.second { background: #3a3a3c; color: #f5f5f7; }
       p.small { color: #a1a1a6; }
+      p.punch .cat { --ink: #34d399; --hot: #ecfdf5; }
       .art::before { background: radial-gradient(closest-side, rgba(52, 211, 153, 0.16), rgba(167, 139, 250, 0.10) 65%, transparent); }
     }
   </style>
@@ -30,7 +44,8 @@
   <main>
     <div class="art"><canvas id="washer" width="640" height="464" role="img" aria-label="A washing machine with banknotes flying in, and a cat sitting beside it"></canvas></div>
     <h1><span class="name" id="who">A friend</span> invited you to Money Laundering</h1>
-    <p>The app that roasts your spending until you stop. Use this invite and you both get something.</p>
+    <p class="punch"><span class="lead">Launder your money. Legally.</span><span class="cat" id="punch">Do it for the cat.</span></p>
+    <p>Use this invite and you both get something.</p>
     <ol>
       <li>Get the app.</li>
       <li>Come back to this page and tap <b>I have the app</b>, or type <span class="name" id="who2">their username</span> under Invite friends.</li>
@@ -49,5 +64,6 @@
     document.getElementById('open').href = 'https://ledger.615.media/r#' + name;
   </script>
   <script src="washer.js"></script>
+  <script src="punch.js"></script>
 </body>
 </html>
