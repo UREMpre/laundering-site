@@ -173,7 +173,7 @@
   var GIRTH = [0, .3, .6, .95, 1.35];                // MouseSize.girth(size:): MouseTuning.girthAt
 
   // The picture: what card.js hands over (already checked against the tables above), or today's default.
-  var DEFAULT = { picture: 'both', skin: 'classic', plate: '', money: 'classic', coat: 'torbie', bow: null, hat: null, size: 0 };
+  var DEFAULT = { picture: 'both', skin: 'classic', style: 'cartoon', plate: '', money: 'classic', coat: 'torbie', bow: null, hat: null, size: 0 };
   var P = DEFAULT;
   var W_ = SKINS.classic;                            // the machine's look in use
 
@@ -203,6 +203,10 @@
 
   function drawMachine(m, l, t, live) {
     var s = SIZE;
+    // The glass and line machines (Nov 15): a card whose washer is Classic with `washer_style` glass or line is that machine,
+    // as the app reads it (ProfilePictureView.drawnStyle: a skin is always the cartoon machine). Nothing of them is lifted.
+    if (P.skin === 'classic' && P.style === 'glass') return glassMachine(m, s, t, live);
+    if (P.skin === 'classic' && P.style === 'line') return lineMachine(m, s, t, live);
     // Ground shadow (drawGroundShadow)
     m.save(); m.translate(s * .46, s * .965); m.scale(1, .12);
     var g = m.createRadialGradient(0, 0, 0, 0, 0, s * .46);
@@ -275,6 +279,90 @@
     rr(m, x + i2, y + i2, w - 2 * i2, h - 2 * i2, s * .08); strokeC(m, WHITE, W_.rim, s * .008);                          // rim highlight
     if (W_.trim) { rr(m, x, y, w, h, s * .09); strokeC(m, W_.ink, .55, s * .030); strokeC(m, W_.trim, 1, s * .020); }  // metal trim
     else { rr(m, x, y, w, h, s * .09); strokeC(m, W_.ink, .40, s * .012); }                                            // chunky outline
+  }
+
+  // ---- the glass machine (Theme/Washer/WasherGlassView.swift, its Chassis and drum, on a light page) ----------------
+  function glassMachine(m, s, t, live) {
+    var cx = s * .5, cy = s * .585, x = s * .09, y = s * .05, w = s * .82, h = s * .90, r = s * .16;
+    m.save(); m.filter = 'blur(' + (s * .05) + 'px)'; rr(m, x, y + s * .035, w, h, r); fillC(m, TINT, .18); m.restore();   // the tinted halo
+    [.29, .71].forEach(function (fx) { rr(m, s * fx - s * .05, s * .935, s * .10, s * .04, s * .02); fillC(m, c3(.80, .86, .90)); });
+    var g = m.createLinearGradient(0, y, 0, y + h);                       // frosted body: white over a cool tint
+    g.addColorStop(0, css(c3(.97, .99, 1))); g.addColorStop(1, css(c3(.80, .88, .94)));
+    rr(m, x, y, w, h, r); m.fillStyle = g; m.fill();
+    m.save(); rr(m, x, y, w, h, r); m.clip();                              // the diagonal sheen
+    var sh = m.createLinearGradient(x, y, x + w, y + h); sh.addColorStop(0, 'rgba(255,255,255,.55)'); sh.addColorStop(.45, 'rgba(255,255,255,0)');
+    m.fillStyle = sh; m.fillRect(x, y, w, h); m.restore();
+    rr(m, x, y, w, h, r); strokeC(m, c3(.55, .66, .76), .55, s * .010);
+    rr(m, x + s * .008, y + s * .008, w - s * .016, h - s * .016, r * .94); strokeC(m, WHITE, .9, s * .010);
+    for (var i = 0; i < 3; i++) {                                         // three glass pills, the first lit
+      rr(m, s * (.235 + .11 * i) - s * .0425, s * .165 - s * .021, s * .085, s * .042, s * .021);
+      fillC(m, i === 0 ? TINT : c3(.10, .14, .20), i === 0 ? .8 : .08); strokeC(m, WHITE, .9, s * .004);
+    }
+    circ(m, s * .76, s * .165, s * .045); fillC(m, c3(.96, .98, 1)); strokeC(m, c3(.60, .70, .80), .6, s * .004);   // the knob
+    rr(m, s * .754, s * .125, s * .012, s * .03, s * .006); fillC(m, TINT);
+    circ(m, cx, cy, s * .265); var rg = m.createRadialGradient(cx, cy, s * .20, cx, cy, s * .265);
+    rg.addColorStop(0, css(c3(.86, .92, .97))); rg.addColorStop(1, css(WHITE)); m.fillStyle = rg; m.fill();
+    strokeC(m, c3(.55, .66, .76), .45, s * .006);
+    circ(m, cx, cy, s * .215); var lg = m.createRadialGradient(cx - s * .02, cy - s * .03, 0, cx, cy, s * .22);   // the dark lens
+    lg.addColorStop(0, css(c3(.10, .16, .30))); lg.addColorStop(1, css(c3(.02, .04, .10))); m.fillStyle = lg; m.fill();
+    m.save(); m.shadowColor = css(TINT, .9); m.shadowBlur = s * .05; circ(m, cx, cy, s * .15); strokeC(m, TINT, .85, s * .03); m.restore();
+    var a0 = live ? 2 * Math.PI * .7 * t : .35, dr = s * .15;              // the drum: paddles and bright arcs, turning
+    m.save(); m.translate(cx, cy); m.rotate(a0); m.lineCap = 'round';
+    for (var k = 0; k < 3; k++) {
+      var a = k * 2 * Math.PI / 3;
+      m.beginPath(); m.moveTo(Math.cos(a) * dr * .30, Math.sin(a) * dr * .30); m.lineTo(Math.cos(a) * dr * .80, Math.sin(a) * dr * .80); strokeC(m, WHITE, .6, s * .018);
+      m.beginPath(); m.arc(0, 0, dr, a, a + 50 * DEG); strokeC(m, WHITE, .75, s * .016);
+    }
+    m.restore();
+    m.beginPath(); m.ellipse(s * .815, cy, s * .06, s * .25, 0, 0, 6.2832);  // the door, open on its right hinge, edge-on
+    var dg = m.createLinearGradient(s * .755, 0, s * .875, 0); dg.addColorStop(0, css(WHITE, .95)); dg.addColorStop(1, css(c3(.80, .88, .94), .9));
+    m.fillStyle = dg; m.fill(); strokeC(m, c3(.55, .66, .76), .6, s * .006);
+    m.beginPath(); m.ellipse(s * .815, cy, s * .042, s * .23, 0, 0, 6.2832); fillC(m, TINT, .22);
+    rr(m, s * .865, cy - s * .06, s * .022, s * .12, s * .011); fillC(m, c3(.86, .92, .97)); strokeC(m, c3(.55, .66, .76), .5, s * .004);
+  }
+
+  // ---- the line machine (Theme/Washer/WasherLineView.swift): drawn in one go, never coloured in ----------------------
+  function lineMachine(m, s, t, live) {
+    var lw = Math.min(2.5, Math.max(2, s * .0125)), ink = c3(.14, .52, .40);
+    m.save(); m.lineCap = 'round'; m.lineJoin = 'round';
+    rr(m, s * .10, s * .08, s * .80, s * .84, s * .085); fillC(m, c3(.99, .98, .94), .9); strokeC(m, ink, 1, lw);   // a sheet to be drawn on
+    m.beginPath(); m.moveTo(s * .10, s * .255); m.lineTo(s * .90, s * .255); strokeC(m, ink, 1, lw);
+    for (var i = 0; i < 3; i++) { circ(m, (.20 + .075 * i) * s, .1675 * s, .019 * s); strokeC(m, ink, 1, lw); }
+    var px = s * .53, py = s * .60, R = s * .245, sway = live ? .045 * Math.sin(t * 1.7) + .02 * Math.sin(t * 4.3) : 0, sw = (.30 + sway) * R;
+    m.beginPath(); m.ellipse(px - R - sw, py, Math.max(.1, sw), R, 0, 0, 6.2832); strokeC(m, ink, 1, lw);   // the door's rim
+    circ(m, px, py, R - lw / 2); fillC(m, ink, .10);
+    circ(m, px, py, R); strokeC(m, ink, 1, lw);
+    var dr = .127 * s, period = 2 * Math.PI * dr / 8;
+    m.save(); m.translate(px, py); m.rotate(live ? (t * 2.1) % (2 * Math.PI) : .35); m.setLineDash([period * .58, period * .42]);
+    circ(m, 0, 0, dr); strokeC(m, ink, 1, lw); m.restore();
+    m.restore();
+  }
+
+  // ---- the mounted fish, alone (`picture` "fish": ProfilePictureView with the trophy as the subject) ------------------
+  // The app paints each species; this page draws one plain fish on the plaque (the species is a key the page has no table
+  // for, so it only says that there is a fish).
+  function drawPlaque(m) {
+    var w = LH * .86 * 1.05, h = LH * .67, x = LW / 2 - w / 2, y = LH / 2 - LH * .02 - h / 2, r = h * .12;
+    m.save();
+    m.shadowColor = 'rgba(0,0,0,.22)'; m.shadowBlur = 10; m.shadowOffsetY = 4;
+    var g = m.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, css(c3(.72, .48, .27))); g.addColorStop(1, css(c3(.55, .34, .18)));
+    rr(m, x, y, w, h, r); m.fillStyle = g; m.fill(); m.restore();
+    rr(m, x, y, w, h, r); strokeC(m, CAT_INK, 1, 3);
+    rr(m, x + 8, y + 8, w - 16, h - 16, r * .7); strokeC(m, c3(.42, .25, .12), .6, 2);
+    for (var k = 0; k < 4; k++) { m.beginPath(); m.moveTo(x + 14, y + h * (.25 + k * .17)); m.bezierCurveTo(x + w * .35, y + h * (.22 + k * .17), x + w * .65, y + h * (.30 + k * .17), x + w - 14, y + h * (.26 + k * .17)); strokeC(m, c3(.45, .28, .14), .35, 1.2); }
+    var fx = LW / 2, fy = y + h * .44, fw = w * .62, fh = h * .30;            // the fish: body, tail, fins, eye
+    m.beginPath(); m.moveTo(fx + fw * .30, fy); m.lineTo(fx + fw * .52, fy - fh * .55); m.lineTo(fx + fw * .48, fy); m.lineTo(fx + fw * .52, fy + fh * .55); m.closePath();
+    fillC(m, c3(.42, .62, .36)); strokeC(m, CAT_INK, 1, 2.4);
+    m.beginPath(); m.moveTo(fx - fw * .08, fy - fh * .42); m.quadraticCurveTo(fx + fw * .05, fy - fh * .85, fx + fw * .20, fy - fh * .38); m.closePath();
+    fillC(m, c3(.36, .54, .30)); strokeC(m, CAT_INK, 1, 2.2);
+    m.beginPath(); m.ellipse(fx - fw * .06, fy, fw * .40, fh * .50, 0, 0, 6.2832);
+    var bg = m.createLinearGradient(0, fy - fh / 2, 0, fy + fh / 2); bg.addColorStop(0, css(c3(.46, .66, .40))); bg.addColorStop(1, css(c3(.88, .90, .72)));
+    m.fillStyle = bg; m.fill(); strokeC(m, CAT_INK, 1, 2.6);
+    circ(m, fx - fw * .32, fy - fh * .08, fh * .09); fillC(m, WHITE); strokeC(m, CAT_INK, 1, 1.6);
+    circ(m, fx - fw * .32, fy - fh * .08, fh * .045); fillC(m, CAT_INK);
+    var pw = w * .30, ph = h * .13, pxx = LW / 2 - pw / 2, pyy = y + h * .80 - ph / 2;   // the brass plate
+    var pg = m.createLinearGradient(pxx, pyy, pxx + pw, pyy + ph); pg.addColorStop(0, css(c3(.98, .86, .52))); pg.addColorStop(1, css(c3(.78, .56, .20)));
+    rr(m, pxx, pyy, pw, ph, ph * .3); m.fillStyle = pg; m.fill(); strokeC(m, CAT_INK, .8, 1.6);
   }
 
   // The founders' brass plate (and The Plus One's rose-gold one), under the panel on the left (drawPlate).
@@ -908,8 +996,14 @@
   function frame(t, live) {
     [main, lm, lk].forEach(function (c) { c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, W, H); setBase(c); });
     var l = hdr ? lm : null, k = hdr ? lk : null;
-    var place = P.picture === 'washer' ? null : catPlace();
-    if (P.picture === 'mouse') {
+    var place = P.picture === 'washer' || P.picture === 'fish' ? null : catPlace();
+    if (P.picture === 'fish') {
+      var ft = live ? t : 5;
+      drawOrbit(main, l, k, ft, false);              // the money goes round the plaque as it goes round Mouse alone
+      drawPlaque(main);
+      if (l) [l, k].forEach(function (c) { c.save(); c.globalCompositeOperation = 'destination-out'; drawPlaque(c); c.restore(); });
+      drawOrbit(main, l, k, ft, true);
+    } else if (P.picture === 'mouse') {
       var ot = live ? t : 5;                         // Reduce Motion: the app's still moment (ProfilePictureView: t = 5)
       drawOrbit(main, l, k, ot, false);              // behind Mouse
       cat(place, t, live, l, k);
@@ -1097,10 +1191,15 @@
   function has(table, v) { return typeof v === 'string' && v.length <= 24 && Object.prototype.hasOwnProperty.call(table, v); }
   function whole(v, lo, hi) { return typeof v === 'number' && Math.floor(v) === v && v >= lo && v <= hi ? v : null; }
   function fromCard(card, founder, invite) {
-    var p = { picture: 'washer', skin: 'classic', plate: '', money: 'classic', coat: 'torbie', bow: null, hat: null, size: 0 };
+    var p = { picture: 'washer', skin: 'classic', style: 'cartoon', plate: '', money: 'classic', coat: 'torbie', bow: null, hat: null, size: 0 };
     if (!card || typeof card !== 'object' || Array.isArray(card)) return DEFAULT;
     // ProfilePicture.visitorChoice: Mouse, or the two together, only if the card says so; anything else is the washer.
     if (card.picture === 'mouse' || card.picture === 'both' || card.picture === 'washer') p.picture = card.picture;
+    // The mounted fish alone (Nov 14 in the app): only when the card has a trophy; without one the app draws the washer.
+    var tr = card.trophy;
+    if (card.picture === 'fish' && tr && typeof tr === 'object' && !Array.isArray(tr) && typeof tr.species === 'string' && /^[A-Za-z0-9]{1,40}$/.test(tr.species)) p.picture = 'fish';
+    // The washer's style: the glass or the line machine (a skin other than Classic is always the cartoon one).
+    if (card.washer_style === 'glass' || card.washer_style === 'line') p.style = card.washer_style;
     if (has(SKINS, card.washer)) p.skin = card.washer;
     if (has(MONEY, card.money)) p.money = card.money;
     if (has(COATS, card.coat)) p.coat = card.coat;
@@ -1115,7 +1214,9 @@
   }
   function label(p) {
     var mouse = 'a ' + COAT_NAMES[p.coat] + ' cat' + (p.bow ? ' in a bow tie' : '') + (p.hat ? ', wearing a ' + HAT_NAMES[p.hat] : '');
-    var washer = 'A ' + SKIN_NAMES[p.skin] + ' with ' + MONEY_NAMES[p.money] + ' flying in';
+    var machine = p.skin === 'classic' && p.style === 'glass' ? 'glass washing machine' : p.skin === 'classic' && p.style === 'line' ? 'washing machine drawn in green line' : SKIN_NAMES[p.skin];
+    var washer = 'A ' + machine + ' with ' + MONEY_NAMES[p.money] + ' flying in';
+    if (p.picture === 'fish') return 'A mounted fish on a wooden plaque, with ' + MONEY_NAMES[p.money] + ' going round';
     if (p.picture === 'mouse') return 'Mouse, ' + mouse + ', with ' + MONEY_NAMES[p.money] + ' going round';
     return p.picture === 'both' ? washer + ', and Mouse beside it, ' + mouse : washer;
   }
@@ -1126,7 +1227,7 @@
       var was = [P, W_, CO];
       P = p; W_ = SKINS[p.skin]; CO = COATS[p.coat];
       // Drawn once off screen first: should anything in it ever fail, the picture stays as it was.
-      try { var t0 = layer().getContext('2d'); t0.setTransform(W / LW, 0, 0, H / LH, 0, 0); if (p.picture !== 'washer') drawCat(t0, 0, false, catPlace().feet, catPlace().u); }
+      try { var t0 = layer().getContext('2d'); t0.setTransform(W / LW, 0, 0, H / LH, 0, 0); if (p.picture === 'fish') drawPlaque(t0); else if (p.picture !== 'washer') drawCat(t0, 0, false, catPlace().feet, catPlace().u); }
       catch (e) { P = was[0]; W_ = was[1]; CO = was[2]; return; }
       canvas.setAttribute('aria-label', label(p));
       report();
