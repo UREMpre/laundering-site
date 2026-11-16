@@ -40,7 +40,7 @@
   <h2>Three ways to use the app</h2>
   <p><b>By hand (free).</b> You type in your own transactions. No bank is connected, and what you type stays on your iPhone and in your own iCloud. We receive nothing about you or your money.</p>
   <p><b>With your own Plaid keys (free).</b> You create your own Plaid account and enter its keys in the app. The app then talks to Plaid directly from your iPhone. Your bank data never passes through us.</p>
-  <p><b>Connected by us (subscription, coming soon).</b> We provide the Plaid connection. Your iPhone asks our server for your bank data, our server asks Plaid, and the answer is passed straight back to your iPhone.</p>
+  <p><b>Connected by us (subscription).</b> We provide the Plaid connection. Your iPhone asks our server for your bank data, our server asks Plaid, and the answer is passed straight back to your iPhone.</p>
 
   <h2>What stays on your iPhone and in your iCloud</h2>
   <ul>
@@ -54,7 +54,7 @@
   <p>The games on Lint Lane ask our server what time it is, so changing your iPhone's clock cannot speed them up. The request carries nothing about you or your money. Like any internet request it shows your IP address, which stays only in the ordinary server log and is deleted after 30 days.</p>
 
   <h2>What we receive when we provide the connection</h2>
-  <p>This section applies to the subscription service once it is available.</p>
+  <p>This section applies if you subscribe to the service.</p>
   <ul>
     <li><b>An account identifier</b> from Sign in with Apple, and your email address only if you choose to share it.</li>
     <li><b>Subscription status</b> from Apple, so we know the subscription is active. We never see your payment card.</li>
@@ -64,7 +64,7 @@
   <p>Your transactions and balances pass through our server on their way from Plaid to your iPhone. We do not store them, read them, or use them for anything else. Server logs record that a request happened, when, and whether it failed. They do not contain transaction details and are deleted after 30 days.</p>
 
   <h2>Public shaming (optional, off until you turn it on)</h2>
-  <p>Public shaming is a feed on the Rap Sheet tab where you and friends you have added see each other's poor choices and comment on them. Nothing below is collected unless you turn it on, accept its rules and pick a username. It needs Sign in with Apple, whichever way you use the app.</p>
+  <p>Public shaming is a feed on the Lint Trap tab's Friends page where you and friends you have added see each other's poor choices and comment on them. Nothing below is collected unless you turn it on, accept its rules and pick a username. It needs Sign in with Apple, whichever way you use the app.</p>
   <p>While it is on, we store on our server:</p>
   <ul>
     <li><b>Your username</b> and an account identifier from Sign in with Apple.</li>
@@ -78,7 +78,7 @@
   <p>You can start a chat with up to eleven of your friends, with a name picked from our list (nobody types a chat's name). We keep the chat's name, who is in it, the messages and when each member last read it. Messages are seen only by the people in the chat. A message can share one of your own dirty charges as it appears in your feed; if you take that charge back, it leaves every chat too. Messages are deleted after 30 days, when you delete them, when you leave the chat or are removed from it, and when you leave Public shaming or delete your account. Any message can be reported; reports are reviewed within 24 hours, as for comments. If you block someone, the two of you are never in the same chat.</p>
 
   <h2>Public profile (optional, off by default)</h2>
-  <p>If you turn it on, we store a card that anyone with your link can see: your username, your washer, your Clean Streak steps, months in the green, the share of charges you called clean, fish caught, plants grown, and how Mouse and Mouse's House look. It never includes an amount, your income, a balance, your age or any charge. Turning it off deletes the card from our server at once.</p>
+  <p>If you turn it on, we store a card that anyone with your link can see: your username, your washer, your Clean Streak steps, months in the green, the share of charges you called clean, fish caught, plants grown, and how Mouse and Mouse's House look. The card also shows the picture you chose for the top (your washer, Mouse or a mounted fish), your money look, how round Mouse is, the month you started using the app, the fish you mounted (the kind, its length and weight), how many friends you brought in, and your founding member and invite numbers if you have them. It never includes an amount, your income, a balance, your age or any charge. Turning it off deletes the card from our server at once.</p>
   <p>When you open someone's profile or invite link on laundering.app, your browser asks our service for that person's public profile look (the washer, money and Mouse they chose); the request carries the username in the link and, like any web request, your IP address, which is kept only in our 30-day request logs.</p>
 
   <h2>Friends on Lint Lane (on once you have a friend; one switch turns it off)</h2>
@@ -100,8 +100,12 @@
   <h2>Feature requests (optional)</h2>
   <p>If you suggest an idea, we keep its title and description, that your account sent it, and your votes. It is seen only by you and our team until we approve it; approved ideas are shown to everyone without your name. Deleting your account deletes ideas not yet approved and your votes; approved ideas stay, with no author.</p>
 
+  <h2>Invites and referrals</h2>
+  <p>If you claim a username to invite friends, or join through someone's invite, we keep who invited whom and when, your founding member number (one of the first 100 usernames claimed after launch) and your invite number (one of the first 1,000 people who joined through an invite), if you have them. You can name who invited you once, in your first 30 days.</p>
+  <p>The person who invited you sees your username, when you joined, and whether you have subscribed: not yet, subscribed, counted (subscribed for seven days) or lapsed. They never see what you paid or anything about your money. While you have not subscribed they can send you a reminder ("Remind") at most once every three days; you see it the next time you open the app, and as a notification if you allowed those. We keep when they last reminded you and when you saw it. Deleting your account deletes this record and frees your username. If you had a founding member or invite number, we keep only that number next to a scrambled form of your Apple sign-in, so the same person signing up again gets the same number back instead of a new one.</p>
+
   <h2>Fishing leaderboard</h2>
-  <p>If your public profile is on, the best fish you catch each week and of all time (what it was, how long and how heavy) are shown on the fishing leaderboard with your username, for anyone using the app to see. We keep one entry per board for you and delete your entries when you turn your public profile off or delete your account; weekly entries are removed after two weeks. Nothing about your money is sent for this.</p>
+  <p>If your public profile is on, the best fish you catch each week and of all time (what it was, how long and how heavy, and the rod and bait you caught it with) are shown on the fishing leaderboard with your username, for anyone using the app to see. We keep one entry per board for you and delete your entries when you turn your public profile off or delete your account; weekly entries are removed after two weeks. Nothing about your money is sent for this.</p>
 
   <h2>Pub games with friends (optional)</h2>
   <p>If you ask a friend to a game at the pub, or accept one, we keep on our server which game it is, who asked whom, the moves each of you made, whose turn it is and how the game ended. Only friends you have accepted can play you. An unanswered invitation is deleted after 7 days, an idle game after 30 days, and a finished game 14 days after it ends; removing or blocking a friend deletes your games with them, and leaving Public shaming or deleting your account deletes all of yours. Nothing about your money or your Suds is sent for this.</p>

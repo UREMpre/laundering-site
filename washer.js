@@ -133,7 +133,7 @@
   var SKIN_NAMES = { classic: 'washing machine', retro: 'retro washing machine', chrome: 'chrome washing machine',
                      neon: 'neon washing machine', gold: 'gold vault washing machine', getaway: 'black getaway washing machine',
                      perpetual: 'colour-shifting washing machine', untouchable: 'pearl and gold washing machine with a crown',
-                     founder: "founder's edition washing machine", plusOne: 'rose-gold washing machine' };
+                     founder: "founder's edition washing machine", plusOne: 'rose gold washing machine' };
 
   // ---- the money looks (MoneyTheme; ProfilePictureView.piece) ------------------------------------------------------
   var WORLD = [c3(.30, .80, .56), c3(.36, .62, .98), c3(.98, .52, .66), c3(.98, .68, .30), c3(.66, .52, .96)];   // MoneyFlow.worldColours
@@ -147,7 +147,7 @@
     roseGold: { fill: ROSE_NOTE, w: 24, h: 13 }
   };
   var MONEY_NAMES = { classic: 'banknotes', mint: 'fresh banknotes', hundreds: 'big banknotes', world: 'banknotes of many colours',
-                      marked: 'marked banknotes', roseGold: 'rose-gold banknotes' };
+                      marked: 'marked banknotes', roseGold: 'rose gold banknotes' };
 
   // ---- Mouse's coats, bow ties and hats (MouseCoat.coat, BowColor.color, MouseHatStyle) ----------------------------
   var CAT_WHITE = c3(1, .99, .97), PAWS = c3(.87, .85, .83);
