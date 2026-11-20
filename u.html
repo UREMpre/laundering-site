@@ -57,15 +57,16 @@
     <p class="punch"><span class="lead">Launder your money. Legally.</span><span class="cat" id="punch">Do it for the cat.</span></p>
     <p class="gift"><b>New here? You get something too:</b> a party hat for Mouse, rose gold money and 500 Suds.</p>
     <p class="gift">The first 1,000 also get a numbered rose gold washer, while they last.</p>
-    <p class="small">A public profile, and their invite link too. It's not a friend request.</p>
+    <p class="small">A profile link, and their referral link too. It's not a friend request.</p>
+    <p class="small">Some profiles are off or just for friends. Those show nothing here, and in the app only to their friends.</p>
     <ol>
-      <li>Tap <b>Copy invite &amp; get the app</b>.</li>
-      <li>In the app, tap <b>Paste</b> on the invite card.</li>
+      <li>Tap <b>Copy referral link &amp; get the app</b>.</li>
+      <li>In the app, tap <b>Paste</b> on the referral card.</li>
     </ol>
-    <a class="button" id="get" href="https://apps.apple.com/app/id6831441351">Copy invite &amp; get the app</a>
+    <a class="button" id="get" href="https://apps.apple.com/app/id6831441351">Copy referral link &amp; get the app</a>
     <a class="button second" id="open" href="#">I have the app</a>
-    <p class="small" id="copied" hidden>Invite copied.</p>
-    <p class="small">Nothing from this link is sent to this website: the username stays in the part after the <code>#</code>, and the copied invite stays on your phone. The page asks the app for that profile's public look, and nothing else.</p>
+    <p class="small" id="copied" hidden>Referral link copied.</p>
+    <p class="small">Nothing from this link is sent to this website: the username stays in the part after the <code>#</code>, and the copied referral link stays on your phone. The page asks the app for that profile's look, and nothing else.</p>
   </main>
   <script>
     var name = '';
@@ -75,7 +76,8 @@
     } else { name = ''; }
     // The app opens links on its own domain (a universal link); a tap from this one hands over.
     document.getElementById('open').href = 'https://ledger.615.media/u#' + name;
-    // A profile link is a referral link too: the invite is copied as the person goes to get the app (as on r.html), and the
+    // A profile link is a referral link too (founder, Nov 13 and again Nov 20). The copied line holds both "referral link"
+    // and "invite from @", so builds up to 1.1.1 (which look for "invite from @") read it too. The invite is copied as the person goes to get the app (as on r.html), and the
     // app's invite card pastes it (Data/InvitePaste.swift reads this exact line). Nothing is sent anywhere.
     var get = document.getElementById('get');
     if (!name) { get.textContent = 'Get it on the App Store'; document.querySelector('ol').hidden = true; }
@@ -84,7 +86,7 @@
       event.preventDefault();
       var go = function () { location.href = get.href; };
       var done = false;
-      navigator.clipboard.writeText('Money Laundering invite from @' + name).then(function () {
+      navigator.clipboard.writeText('Money Laundering referral link: invite from @' + name).then(function () {
         document.getElementById('copied').hidden = false;
         if (!done) { done = true; setTimeout(go, 500); }
       }, function () { if (!done) { done = true; go(); } });

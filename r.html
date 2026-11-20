@@ -57,7 +57,7 @@
     <p class="punch"><span class="lead">Launder your money. Legally.</span><span class="cat" id="punch">Do it for the cat.</span></p>
     <p class="gift"><b>You get something too:</b> a party hat for Mouse, rose gold money and 500 Suds.</p>
     <p class="gift">The first 1,000 also get a numbered rose gold washer, while they last.</p>
-    <p class="small">Just a referral: your friend gets credit if you subscribe. You don't become friends or see each other's money.</p>
+    <p class="small">This is <span id="whose">a friend's</span> referral link: they get credit if you subscribe. It doesn't make you friends, and nobody sees anyone's money.</p>
     <ol>
       <li>Tap <b>Copy invite &amp; get the app</b>.</li>
       <li>In the app, tap <b>Paste</b> on the invite card.</li>
@@ -72,6 +72,7 @@
     try { name = decodeURIComponent(location.hash.slice(1)); } catch (e) { name = ''; }
     if (/^[A-Za-z0-9_]{3,20}$/.test(name)) {
       document.getElementById('who').textContent = '@' + name;
+      document.getElementById('whose').textContent = '@' + name + "'s";
     } else { name = ''; }
     // The app opens links on its own domain (a universal link); a tap from this one hands over.
     document.getElementById('open').href = 'https://ledger.615.media/r#' + name;
@@ -84,7 +85,7 @@
       event.preventDefault();
       var go = function () { location.href = get.href; };
       var done = false;
-      navigator.clipboard.writeText('Money Laundering invite from @' + name).then(function () {
+      navigator.clipboard.writeText('Money Laundering referral link: invite from @' + name).then(function () {
         document.getElementById('copied').hidden = false;
         if (!done) { done = true; setTimeout(go, 500); }
       }, function () { if (!done) { done = true; go(); } });
