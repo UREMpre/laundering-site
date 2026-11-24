@@ -38,7 +38,7 @@
   <p>Money Laundering is a personal budgeting app for iPhone made by 615 Media Group, LLC ("we", "us"). Despite the name, it is a budgeting tool: it does not move, hold or launder money. Questions go to <a href="mailto:support@laundering.app">support@laundering.app</a>.</p>
 
   <h2>Three ways to use the app</h2>
-  <p><b>By hand (free).</b> You type in your own transactions. No bank is connected, and what you type stays on your iPhone and in your own iCloud. We receive nothing about you or your money.</p>
+  <p><b>By hand (free).</b> You type in your own transactions. No bank is connected, and what you type stays on your iPhone and in your own iCloud. We receive nothing about you or your money. The app does send an anonymous install count, described under "The town's clock".</p>
   <p><b>With your own Plaid keys (free).</b> You create your own Plaid account and enter its keys in the app. The app then talks to Plaid directly from your iPhone. Your bank data never passes through us.</p>
   <p><b>Connected by us (subscription).</b> We provide the Plaid connection. Your iPhone asks our server for your bank data, our server asks Plaid, and the answer is passed straight back to your iPhone.</p>
 
@@ -54,7 +54,8 @@
   <p><b>Health (optional, off until you turn it on).</b> If you turn on health marks on Lint Lane, Money Laundering reads your step count and workouts from Health on your iPhone, read only. They are used for one thing: a health mark for your town score on days with 5,000 steps or a workout of 15 minutes or more. Steps and workouts never leave your iPhone. They are not sent to us, to iCloud or to anyone else, and are not used for advertising. Turn health marks off in Settings → Fun and games, or remove access in the Health app.</p>
 
   <h2>The town's clock</h2>
-  <p>The games on Lint Lane ask our server what time it is, so changing your iPhone's clock cannot speed them up. The request carries nothing about you or your money. Like any internet request it shows your IP address, which stays only in the ordinary server log and is deleted after 30 days.</p>
+  <p>The games on Lint Lane ask our server what time it is, so changing your iPhone's clock cannot speed them up. Apart from the anonymous install count below, the request carries nothing about you or your money. Like any internet request it shows your IP address, which stays only in the ordinary server log and is deleted after 30 days.</p>
+  <p>Counting copies of the app. Once a day, the same request also carries a random number the app made up the first time it ran, and the app's version number, so we can count how many copies of Money Laundering are in use. The number is not tied to you, your Apple Account, your iPhone or your data, and we never connect it to an account, even if you have one. For each number we keep only the first and last day we saw it and the app's version, not your IP address. A number we have not seen for 400 days is deleted. Deleting the app deletes the number, and a new copy makes a new one.</p>
 
   <h2>What we receive when we provide the connection</h2>
   <p>This section applies if you subscribe to the service.</p>
