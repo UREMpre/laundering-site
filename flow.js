@@ -103,16 +103,17 @@
   function measure() { cw = els[0].offsetWidth || 300; sw = stage.clientWidth || 390; }
   function wrap(d) { d = ((d % n) + n) % n; return d >= n / 2 ? d - n : d; }
   function render() {
-    // On a wide screen the side stacks spread out to use the room; on a phone they stay tight.
-    var near = cw * 0.62, depth = cw * 0.55;
-    var step = Math.min(cw * 0.42, Math.max(cw * 0.2, (sw * 0.5 - near - cw * 0.25) / 3));
-    var fade = sw > 900 ? 3.4 : 2.6;
+    // Classic Cover Flow (founder, Nov 25: "the tiles clip together and it's not like Cover Flow"): the card in front stands
+    // forward and flat; every other card turns 70 degrees with its INNER edge going away from you (so it can never cut into
+    // the card in front), sits a clear gap to the side, and the rest stack tightly behind it, inner ones on top.
+    var side0 = cw * 0.8, step = cw * (sw > 900 ? 0.2 : 0.15), fz = cw * 0.1, sz = -cw * 0.28, turn = 70;
+    var fade = sw > 900 ? 4.2 : 3.2;
     for (var i = 0; i < n; i++) {
       var d = wrap(i - pos), a = Math.abs(d), s = d < 0 ? -1 : 1;
       var x, z, r;
-      if (a <= 1) { x = d * near; z = -a * depth; r = d * 58; }
-      else { x = s * (near + (a - 1) * step); z = -depth - (a - 1) * cw * 0.12; r = s * 58; }
-      var op = a <= fade ? 1 : Math.max(0, 1 - (a - fade) / 1.2);
+      if (a <= 1) { x = d * side0; z = fz + (sz - fz) * a; r = -d * turn; }
+      else { x = s * (side0 + (a - 1) * step); z = sz - (a - 1) * 2; r = -s * turn; }
+      var op = a <= fade ? 1 : Math.max(0, 1 - (a - fade) / 0.8);
       var el = els[i];
       el.style.transform = "translate3d(" + x.toFixed(1) + "px,0," + z.toFixed(1) + "px) rotateY(" + r.toFixed(2) + "deg)";
       el.style.opacity = op.toFixed(3);
