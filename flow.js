@@ -56,8 +56,10 @@
   var track = root.querySelector(".flow-track");
   var n = CARDS.length;
 
+  var art = window.FlowArt || null; // flow-art.js: made-up logos and maps (optional; without it the monogram tiles stay)
   var els = CARDS.map(function (c, i) {
     var k = CATS[c.cat];
+    var logo = art && art.logo(c.shop);
     var el = document.createElement("div");
     el.className = "flow-card";
     el.setAttribute("role", "group");
@@ -70,8 +72,9 @@
     el.innerHTML =
       (c.quip ? '<div class="quip" aria-hidden="true">' + esc(c.quip) + "<small>Tap to change it to dirty</small></div>" : "") +
       '<div class="face"><div class="in">' +
-        '<div class="bg"></div>' + svg(k.sym, "bigsym") +
-        '<div class="tile" aria-hidden="true"><b>' + esc(c.shop.charAt(0).toUpperCase()) + "</b>" + svg(k.sym) + "</div>" +
+        '<div class="bg"></div>' + svg(k.sym, "bigsym") + (art ? '<div class="map"></div>' : "") +
+        (logo ? '<div class="tile logo" aria-hidden="true">' + logo + "</div>"
+              : '<div class="tile" aria-hidden="true"><b>' + esc(c.shop.charAt(0).toUpperCase()) + "</b>" + svg(k.sym) + "</div>") +
         '<div class="scrim"></div>' +
         '<div class="cap">' +
           '<div class="top"><span class="name">' + esc(c.shop) + '</span><span class="amt">' + c.amount + "</span></div>" +
@@ -83,6 +86,8 @@
         '<div class="stamp ' + c.verdict + '" aria-hidden="true">' + c.verdict.toUpperCase() + "</div>" +
         '<span class="sr-only">Verdict: ' + c.verdict + ".</span>" +
       "</div></div>";
+    // The map is drawn once per card, from the shop's name (the same map every visit), and never per frame.
+    if (art) el.querySelector(".map").style.backgroundImage = art.map(c.shop, null, mix(k.hex, 255, 0.10), mix(k.hex, 0, 0.40));
     track.appendChild(el);
     return el;
   });
