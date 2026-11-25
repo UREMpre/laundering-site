@@ -1099,7 +1099,9 @@
   }
   // About ten notes to a screen's height on a phone, twelve on a wide screen; never fewer than 20 or more than 160.
   function driftCount(f) {
-    var want = clamp(Math.round((f.docH - f.vBottom) / Math.max(400, f.vh) * (f.w < 600 ? 10 : 12)), 20, 160);
+    // Since Nov 25 the drift stays still on the screen while the page scrolls ("money is scrolling with the page, can stay
+    // static"): one screen's worth, not the whole page's.
+    var want = f.w < 600 ? 14 : 18;
     while (f.drift.length < want) f.drift.push(driftBorn(f, true, f.drift.length % 6 === 4));
     if (f.drift.length > want) f.drift.length = want;
   }
@@ -1115,10 +1117,11 @@
   // A drift note: anywhere down the page below the vortex. Born again (after being swallowed or wandering off), it comes
   // in off the screen if it can: somewhere not in view, or at a side edge when its place would be on screen.
   function driftBorn(f, anywhere, coin) {
-    var x = between(0, f.w), y = between(f.vBottom - 40, f.docH - 10);
-    if (!anywhere) {
-      var sy = (window.scrollY || window.pageYOffset || 0) - f.top;
-      if (y > sy - 30 && y < sy + f.vh + 30) x = rnd() < .5 ? -14 : f.w + 14;
+    var sy = (window.scrollY || window.pageYOffset || 0) - f.top;
+    var x = between(0, f.w), y = sy + between(-20, f.vh + 20);
+    if (!anywhere) {                                   // comes in from an edge of the screen
+      var r = rnd();
+      if (r < .7) x = r < .35 ? -14 : f.w + 14; else y = sy + f.vh + 30;
     }
     var n = born(x, y); n.age = anywhere ? 9 : 0; n.coin = !!coin; if (coin) n.scale *= .9;
     n.ph = between(0, 6.2832); n.fq = between(.05, .12); n.alpha = between(.7, 1); n.join = 0; n.lazy = 0;
@@ -1147,15 +1150,18 @@
   // lean up towards it), with a little swirl round it. In the header a note JOINS the stream over about two seconds: it
   // takes the vortex's speed, brightens to the vortex's look and is swallowed. Notes well off the screen (more than a
   // screen away) are moved every sixth frame by six frames' worth: they cannot be seen, so the coarse step is free.
+  // Keeps the drift still on the screen: every note not yet caught by the vortex moves with the scroll.
+  function followScroll(f) {
+    var sy = (window.scrollY || window.pageYOffset || 0) - f.top;
+    if (f.lastSy == null) f.lastSy = sy;
+    var dy = sy - f.lastSy; f.lastSy = sy;
+    if (dy) for (var i = 0; i < f.drift.length; i++) if (!(f.drift[i].join > 0)) f.drift[i].y += dy;
+    return sy;
+  }
   function driftStep(f, dt) {
-    var k = f.k, d = f.door, t = clock, sy = (window.scrollY || window.pageYOffset || 0) - f.top, vh = f.vh;
+    var k = f.k, d = f.door, t = clock, sy = followScroll(f), vh = f.vh;
     for (var i = 0; i < f.drift.length; i++) {
       var n = f.drift[i], h = dt;
-      if (n.y < sy - vh || n.y > sy + 2 * vh) {
-        n.lazy += dt; if ((f.frames + i) % 6) continue;
-        h = Math.min(.4, n.lazy); 
-      }
-      n.lazy = 0;
       var dx = d.x - n.x, dy = d.y - n.y, r = Math.max(1, Math.hypot(dx, dy)), nx = dx / r, ny = dy / r;
       var g = 3 + 24 * Math.exp(-r / (1.4 * vh));                     // the black hole's pull, fading with distance
       var vx = Math.sin(t * n.fq * 6.2832 + n.ph) * 12 + nx * g + ny * g * .6;
@@ -1172,7 +1178,7 @@
       n.angle += n.spin * .5 * h; n.flip += h * .6; n.age += h;
       n.spin += .3 * h * (i % 2 ? -1 : 1); if (Math.abs(n.spin) > 1.2) n.spin *= Math.pow(.5, h);
       push(n, h);
-      if (Math.hypot(d.x - n.x, d.y - n.y) < 5 * k || n.y > f.docH + 40 || n.y < f.vTop - 140 || n.x < -70 || n.x > f.w + 70) f.drift[i] = driftBorn(f, false, n.coin);
+      if (Math.hypot(d.x - n.x, d.y - n.y) < 5 * k || n.y > sy + vh + 90 || n.y < Math.max(f.vTop - 140, sy - 140) || n.x < -70 || n.x > f.w + 70) f.drift[i] = driftBorn(f, false, n.coin);
     }
   }
   function fieldStep(f, dt) { if (f.on) vortexStep(f, dt); driftStep(f, dt); }
@@ -1216,7 +1222,7 @@
   // The drift canvas, fixed on the screen: drawn from the page's scroll every frame (and on scroll when nothing moves).
   // About 0.3 opacity; half that again behind words and cards below the header; a joined note grows into the vortex's look.
   function drawAmbient(f) {
-    var g = f.actx, sy = (window.scrollY || window.pageYOffset || 0) - f.top;
+    var g = f.actx, sy = followScroll(f);
     if (Math.abs((window.innerHeight || 0) - f.vh) > 1 || f.amb.clientWidth !== f.aw) ambientSize(f);
     g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, f.amb.width, f.amb.height);
     g.setTransform(f.as, 0, 0, f.as, 0, -sy * f.as);
