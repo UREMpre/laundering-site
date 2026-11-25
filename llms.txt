@@ -1,0 +1,30 @@
+# Money Laundering
+
+> Money Laundering is a budgeting app and spending tracker for iPhone (iOS 26 and later), made for iPhone 18 Pro, iPhone 18 Pro Max and iPhone Duo, with an Apple Watch app, Home Screen and Lock Screen widgets, and games in iMessage. The name is a joke: it is a personal budgeting app and does not move, hold, transfer or launder money.
+
+Made by 615 Media Group, LLC. App Store: https://apps.apple.com/app/id6831441351
+
+## What it does
+- Daily spending limit: one "safe to spend today" number after bills and savings, which moves with the month.
+- Expense tracking: every bank or card charge appears in a swipe deck to be called clean (needed) or dirty (wasteful).
+- Cash flow calendar: every bill and paycheck on its day, with a balance forecast. Bill reminders and a subscription tracker.
+- Savings goals: save an amount by a date or pay off a card; it works out the monthly amount.
+- Monthly report card with a letter grade.
+- Couples and household budgets: share by AirDrop or a link; private iCloud backup.
+- Roasts: optional humorous comments on spending, at three levels (Chill, Default, Unhinged; Unhinged swears and is off by default).
+- Mouse, a cat who moves from an alley to nicer homes as you build good habits, and Lint Lane, an optional town with fishing (100 fish), a garden, an aquarium, shops, pool and arcade games. Play coins (Suds) are earned by using the app and can never be bought or cashed out.
+- Games in iMessage: pool (Pocket Change), Flappy Feline, Purrm Press, fishing, board games and stickers. No account needed to play.
+- "Just the budget" mode hides the town and games.
+
+## Pricing
+- Free: enter transactions by hand. Nothing leaves the phone except the user's own iCloud backup.
+- Bank connections (United States): $5.99 a month or $49.99 a year, through Plaid. The app never sees bank passwords.
+
+## Compared with other budgeting apps
+A budget app for people who want YNAB- or Mint-style tracking with a daily number and something fun to come back to. iPhone only.
+
+## Links
+- Home: https://laundering.app/
+- Privacy policy: https://laundering.app/privacy
+- Terms: https://laundering.app/terms
+- Support: support@laundering.app
