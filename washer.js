@@ -33,8 +33,8 @@
  * `touch` = a press or drag shoves and drags the notes, a tap scatters them, a flick throws them; `hover` = a mouse
  * with no button down pushes them too, more gently (anywhere over the header). Since Nov 25 the play field's money is not
  * drawn in the washer's box but on a page-wide canvas over the header and down to the carousel (see "the big money
- * field" below): a vortex from the header's top, sides and below, and a faint drift under the washer. The loop also
- * pauses while that field is off screen. Without
+ * field" below): a vortex from the header's top, sides and below, and a faint drift down the whole page that the
+ * washer's door pulls on. Off the header only the drift runs; a hidden tab stops everything. Without
  * `data-play` (u.html, r.html) nothing of this exists and the picture is exactly as before.
  */
 (function () {
@@ -1021,66 +1021,87 @@
   }
 
   // ---- the big money field (data-play only; founder, Nov 25: "make the money vortex bigger so that it comes in from the
-  // upper text row and below, with more subtle floating money below") -------------------------------------------------
-  // In the play field the money is not drawn on the washer's canvas but on one canvas laid over the top of the page
-  // (`canvas.money-field`, absolute, the page's full width, from the top down to the Cover Flow carousel). It sits OVER
-  // the washer (the money is in front of the machine, as on the lock screen) and UNDER the header's words and the
-  // sections (index.html gives those z-index 2). It takes no pointer: the finger still goes to the washer's canvas.
-  // Two flocks, same painter (`piece`), same stream as MoneyFlow.step:
-  //   - the vortex: notes born at the header's top (the upper text row), at both sides and below the washer, curving
-  //     into the door; far away they are smaller and fainter, so they read as arriving from a distance;
-  //   - the drift (MoneyFlowAmbient): a few faint notes below the washer, floating slowly with a faint pull towards it.
-  // Field units are CSS pixels of the money canvas. `k` = how big the washer's 440 x 400 box is drawn on the page.
+  // upper text row and below, with more subtle floating money below"; then "the ambient money needs to extend down the
+  // whole page and still be subtly affected by the gravity of the washer black hole, like on the app") ---------------
+  // In the play field the money is not drawn on the washer's canvas. Two canvases, same painter (`piece`):
+  //   - the vortex (`canvas.money-field`, absolute, the page's full width over the header and a little below the washer):
+  //     notes born at the header's top (the upper text row), at both sides and below the washer, riding MoneyFlow.step's
+  //     stream into the door; far away they are smaller and fainter, so they read as arriving from a distance;
+  //   - the drift (`canvas.money-ambient`, fixed, the size of the screen; MoneyFlowAmbient): a few faint notes spread down
+  //     the WHOLE page (about ten to a screen), floating slowly; the washer's door is a black hole whose pull fades with
+  //     distance but never quite to nothing, so far down the page it points up towards it. A note that drifts into the
+  //     header joins the stream, brightens and is swallowed, and is born again somewhere down the page.
+  // Both sit OVER the washer (the money is in front of the machine, as on the lock screen) and UNDER the header's words,
+  // the sections and the footer (index.html gives those z-index 2). Neither takes a pointer: the finger still goes to the
+  // washer's canvas. Everything is in the vortex canvas's own pixels ("field" units: the page, from that canvas's top-left).
+  // `k` = how big the washer's 440 x 400 box is drawn on the page.
   var FIELD = null;
   function makeField() {
     var hero = art.closest ? art.closest('.hero') : null;
     if (!hero || !document.body) return null;
-    var cv = document.createElement('canvas');
+    var amb = document.createElement('canvas'), cv = document.createElement('canvas');
+    amb.className = 'money-ambient'; amb.setAttribute('aria-hidden', 'true');
     cv.className = 'money-field'; cv.setAttribute('aria-hidden', 'true');
     document.body.insertBefore(cv, document.body.firstChild);
-    var f = { canvas: cv, ctx: cv.getContext('2d'), hero: hero, w: 0, h: 0, s: 1, k: 1, top: 0, door: { x: 0, y: 0 },
-              vTop: 0, vBottom: 0, aTop: 0, aBottom: 0, reach: 500, text: [], block: [], notes: [], drift: [], frames: 0 };
-    if (!f.ctx) { cv.parentNode.removeChild(cv); return null; }
+    document.body.insertBefore(amb, cv);                 // the drift under the vortex
+    var f = { canvas: cv, ctx: cv.getContext('2d'), amb: amb, actx: amb.getContext('2d'), hero: hero, w: 0, h: 0, s: 1, k: 1,
+              top: 0, door: { x: 0, y: 0 }, vTop: 0, vBottom: 0, docH: 0, vh: 0, aw: 0, as: 1, reach: 500, text: [], block: [],
+              cover: [], notes: [], drift: [], frames: 0, on: true };
+    if (!f.ctx || !f.actx) { cv.parentNode.removeChild(cv); amb.parentNode.removeChild(amb); return null; }
     fieldGeometry(f);
-    var narrow = f.w < 600;
-    for (var i = 0, nv = narrow ? 50 : 62; i < nv; i++) f.notes.push(vortexBorn(f, true, i % 5 === 2));
-    for (var j = 0, nd = narrow ? 14 : 18; j < nd; j++) f.drift.push(driftBorn(f, true, j % 6 === 4));
+    for (var i = 0, nv = f.w < 600 ? 50 : 62; i < nv; i++) f.notes.push(vortexBorn(f, true, i % 5 === 2));
+    driftCount(f);
     return f;
   }
   function relRect(el, o) {
     var r = el.getBoundingClientRect();
     return { l: r.left - o.left, t: r.top - o.top, r: r.right - o.left, b: r.bottom - o.top };
   }
-  // Where everything is, in the field's own pixels. Run at start, on resize and every half second (fonts, the flow's
-  // pictures and the Duo's fold all move things), so the door follows the washer.
+  // Where everything is, in field units. Run at start, on resize and every half second (fonts, the flow's pictures and
+  // the Duo's fold all move things), so the door follows the washer.
   function fieldGeometry(f) {
     var cv = f.canvas, vh = window.innerHeight || 800;
     var o0 = cv.getBoundingClientRect();
     var wr = relRect(canvas, o0), hr = relRect(f.hero, o0);
-    var flow = document.querySelector('.flow');
-    var stop = flow ? relRect(flow, o0).t - 8 : hr.b + vh;
-    stop = Math.max(wr.b + 220, Math.min(stop, hr.b + 1.3 * vh));
-    var w = Math.max(1, Math.round(o0.width || document.documentElement.clientWidth || 400)), h = Math.round(stop);
+    var w = Math.max(1, Math.round(o0.width || document.documentElement.clientWidth || 400));
+    f.k = Math.max(.5, (wr.r - wr.l) / LW);
+    var h = Math.round(wr.b + 70 * f.k + 160);           // the vortex canvas: the header and a little below the washer
     if (Math.abs(h - f.h) > 1) cv.style.height = h + 'px';
     var s = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
     if (w * h * s * s > 9e6) s = Math.max(1, Math.sqrt(9e6 / (w * h)));   // a very big desktop field: fewer backing pixels
     var bw = Math.round(w * s), bh = Math.round(h * s);
     if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
     f.w = w; f.h = h; f.s = s; f.top = o0.top + (window.scrollY || window.pageYOffset || 0);
-    f.k = Math.max(.5, (wr.r - wr.l) / LW);
     f.door = { x: wr.l + DOOR.x * f.k, y: wr.t + DOOR.y * f.k };
     f.vTop = Math.max(0, hr.t + 8);                       // the vortex: the header, down to a little below the washer
-    f.vBottom = Math.min(h - 20, wr.b + 70 * f.k);
-    f.aTop = wr.b - 50 * f.k;                             // the drift: from the washer's foot down to the carousel
-    f.aBottom = h;
+    f.vBottom = wr.b + 70 * f.k;
+    f.docH = Math.max(f.vBottom + vh, (document.documentElement.scrollHeight || 0) - f.top);
     var d = f.door;
     f.reach = Math.max(Math.hypot(d.x, d.y - f.vTop), Math.hypot(w - d.x, d.y - f.vTop), Math.hypot(d.x, f.vBottom - d.y), Math.hypot(w - d.x, f.vBottom - d.y));
     var col = f.hero.firstElementChild;
-    f.text = []; f.block = [];
+    f.text = []; f.block = []; f.cover = [];
     if (col && col !== art) {
       Array.prototype.forEach.call(col.querySelectorAll('.eyebrow, h1, .lede, .fine'), function (el) { f.text.push(relRect(el, o0)); });
       Array.prototype.forEach.call(col.querySelectorAll('a, button'), function (el) { f.block.push(relRect(el, o0)); });
     }
+    // Below the header the drift is fainter still behind words and cards.
+    Array.prototype.forEach.call(document.querySelectorAll('section .eyebrow, section h2, section > p, .split p, .card, details, .table-wrap, footer'),
+      function (el) { var q = relRect(el, o0); if (q.b > q.t) f.cover.push(q); });
+    f.cover.sort(function (a, b) { return a.t - b.t; });
+    ambientSize(f);
+  }
+  function ambientSize(f) {                              // the fixed canvas: the screen, at most 2x
+    var a = f.amb, w = Math.max(1, a.clientWidth || f.w), h = Math.max(1, a.clientHeight || window.innerHeight || 800);
+    var s = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    var bw = Math.round(w * s), bh = Math.round(h * s);
+    if (a.width !== bw || a.height !== bh) { a.width = bw; a.height = bh; }
+    f.aw = w; f.vh = h; f.as = s;
+  }
+  // About ten notes to a screen's height on a phone, twelve on a wide screen; never fewer than 20 or more than 160.
+  function driftCount(f) {
+    var want = clamp(Math.round((f.docH - f.vBottom) / Math.max(400, f.vh) * (f.w < 600 ? 10 : 12)), 20, 160);
+    while (f.drift.length < want) f.drift.push(driftBorn(f, true, f.drift.length % 6 === 4));
+    if (f.drift.length > want) f.drift.length = want;
   }
   function vortexBorn(f, anywhere, coin) {
     var x, y, r = rnd();
@@ -1091,16 +1112,20 @@
     var n = born(x, y); n.age = anywhere ? 9 : 0; n.coin = !!coin; if (coin) n.scale *= .9;
     return n;
   }
+  // A drift note: anywhere down the page below the vortex. Born again (after being swallowed or wandering off), it comes
+  // in off the screen if it can: somewhere not in view, or at a side edge when its place would be on screen.
   function driftBorn(f, anywhere, coin) {
-    var x = between(-10, f.w + 10), y = anywhere ? between(f.aTop + 40, f.aBottom - 40) : between(f.aTop + 120, f.aBottom);
-    if (!anywhere && rnd() < .5) x = rnd() < .5 ? -14 : f.w + 14;
+    var x = between(0, f.w), y = between(f.vBottom - 40, f.docH - 10);
+    if (!anywhere) {
+      var sy = (window.scrollY || window.pageYOffset || 0) - f.top;
+      if (y > sy - 30 && y < sy + f.vh + 30) x = rnd() < .5 ? -14 : f.w + 14;
+    }
     var n = born(x, y); n.age = anywhere ? 9 : 0; n.coin = !!coin; if (coin) n.scale *= .9;
-    n.ph = between(0, 6.2832); n.fq = between(.07, .16); n.alpha = between(.7, 1);
+    n.ph = between(0, 6.2832); n.fq = between(.05, .12); n.alpha = between(.7, 1); n.join = 0; n.lazy = 0;
     return n;
   }
-  // The vortex rides MoneyFlow.step's stream, scaled to the washer on the page; the drift is the ambient mode: a slow
-  // wander of its own with only a faint pull and swirl towards the door, and a little upward, so it feeds the washer.
-  function fieldStep(f, dt) {
+  // The vortex rides MoneyFlow.step's stream, scaled to the washer on the page.
+  function vortexStep(f, dt) {
     var k = f.k, d = f.door, i, n;
     for (i = 0; i < f.notes.length; i++) {
       n = f.notes[i];
@@ -1116,17 +1141,41 @@
       push(n, dt);
       if (Math.hypot(d.x - n.x, d.y - n.y) < 5 * k || n.x < -90 || n.x > f.w + 90 || n.y < f.vTop - 140 || n.y > f.h + 60) f.notes[i] = vortexBorn(f, false, n.coin);
     }
-    for (i = 0; i < f.drift.length; i++) {
-      n = f.drift[i];
-      var ex = d.x - n.x, ey = d.y - n.y, er = Math.max(1, Math.hypot(ex, ey)), t = clock;
-      var wx = Math.sin(t * n.fq * 6.2832 + n.ph) * 13, wy = Math.cos(t * n.fq * 4.4 + n.ph * 1.7) * 7 - 5;
-      n.x += (wx + ex / er * 7 + ey / er * 6) * k * dt; n.y += (wy + ey / er * 7 - ex / er * 6) * k * dt;
-      n.angle += n.spin * .5 * dt; n.flip += dt * .6; n.age += dt;
-      n.spin += .3 * dt * (i % 2 ? -1 : 1); if (Math.abs(n.spin) > 1.2) n.spin *= Math.pow(.5, dt);
-      push(n, dt);
-      if (n.y < f.aTop - 10 || n.y > f.aBottom + 60 || n.x < -60 || n.x > f.w + 60) f.drift[i] = driftBorn(f, false, n.coin);
+  }
+  // The drift (MoneyFlow's ambient mode): its own slow wander, plus the black hole: a pull towards the door that is
+  // strong near the washer and fades with distance to a faint 3 points a second (so far down the page the notes still
+  // lean up towards it), with a little swirl round it. In the header a note JOINS the stream over about two seconds: it
+  // takes the vortex's speed, brightens to the vortex's look and is swallowed. Notes well off the screen (more than a
+  // screen away) are moved every sixth frame by six frames' worth: they cannot be seen, so the coarse step is free.
+  function driftStep(f, dt) {
+    var k = f.k, d = f.door, t = clock, sy = (window.scrollY || window.pageYOffset || 0) - f.top, vh = f.vh;
+    for (var i = 0; i < f.drift.length; i++) {
+      var n = f.drift[i], h = dt;
+      if (n.y < sy - vh || n.y > sy + 2 * vh) {
+        n.lazy += dt; if ((f.frames + i) % 6) continue;
+        h = Math.min(.4, n.lazy); 
+      }
+      n.lazy = 0;
+      var dx = d.x - n.x, dy = d.y - n.y, r = Math.max(1, Math.hypot(dx, dy)), nx = dx / r, ny = dy / r;
+      var g = 3 + 24 * Math.exp(-r / (1.4 * vh));                     // the black hole's pull, fading with distance
+      var vx = Math.sin(t * n.fq * 6.2832 + n.ph) * 12 + nx * g + ny * g * .6;
+      var vy = Math.cos(t * n.fq * 4.4 + n.ph * 1.7) * 7 + ny * g - nx * g * .6;
+      if (n.join > 0 || (n.y < f.vBottom - 30 && r < f.reach)) {       // in the header: into the stream
+        n.join = Math.min(1, n.join + h / 2);
+        var c = 1 - Math.min(1, r / f.reach);
+        var around = (22 + 190 * c * c) * Math.min(1, r / (46 * k)), pull = 50 + 70 * c;
+        vx += (( ny * around + nx * pull) - vx) * n.join;
+        vy += ((-nx * around + ny * pull) - vy) * n.join;
+        n.flip += h * c * c * 5 * n.join;
+      }
+      n.x += vx * k * h; n.y += vy * k * h;
+      n.angle += n.spin * .5 * h; n.flip += h * .6; n.age += h;
+      n.spin += .3 * h * (i % 2 ? -1 : 1); if (Math.abs(n.spin) > 1.2) n.spin *= Math.pow(.5, h);
+      push(n, h);
+      if (Math.hypot(d.x - n.x, d.y - n.y) < 5 * k || n.y > f.docH + 40 || n.y < f.vTop - 140 || n.x < -70 || n.x > f.w + 70) f.drift[i] = driftBorn(f, false, n.coin);
     }
   }
+  function fieldStep(f, dt) { if (f.on) vortexStep(f, dt); driftStep(f, dt); }
   // 0 deep inside the header's words, 1 at 24 px or more clear of them.
   function clearOf(rects, x, y, pad) {
     var m = 1;
@@ -1136,34 +1185,61 @@
     }
     return m;
   }
-  function drawField(f) {
-    var g = f.ctx, k = f.k, d = f.door, i, n;
-    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, f.canvas.width, f.canvas.height); g.setTransform(f.s, 0, 0, f.s, 0, 0);
-    var sy0 = (window.scrollY || window.pageYOffset || 0) - f.top, vis0 = sy0 - 60, vis1 = sy0 + (window.innerHeight || 800) + 60;
-    function put(n, a, sc, idx) {
-      var sy = sc * (.55 + .45 * Math.abs(Math.cos(n.flip)));
-      g.save(); g.translate(n.x, n.y); g.rotate(n.angle); g.scale(sc, sy); piece(g, null, null, n.coin, idx, a); g.restore();
+  function putNote(g, n, a, sc, idx) {
+    var sy = sc * (.55 + .45 * Math.abs(Math.cos(n.flip)));
+    g.save(); g.translate(n.x, n.y); g.rotate(n.angle); g.scale(sc, sy); piece(g, null, null, n.coin, idx, a); g.restore();
+  }
+  // The look of a note in the header (the vortex's, and a drift note that has joined it): fainter and smaller far from
+  // the door and behind the words, never near the App Store button. Returns false when it is not drawn.
+  function vortexLook(f, n, out) {
+    if (f.block.length && clearOf(f.block, n.x, n.y, 4) < 1) return false;
+    var k = f.k, r = Math.hypot(n.x - f.door.x, n.y - f.door.y), c = 1 - Math.min(1, r / f.reach);
+    var tf = clearOf(f.text, n.x, n.y, -4);
+    out.a = n.alpha * clamp((r - 3 * k) / (11 * k), 0, 1) * (.5 + .5 * Math.sqrt(c)) * (.42 + .58 * tf);
+    out.sc = n.scale * (.28 + .72 * Math.min(1, r / (60 * k))) * KNOTE * k * (.7 + .3 * c) * (.85 + .15 * tf);
+    return true;
+  }
+  var LOOK = { a: 0, sc: 0 };
+  function drawField(f) {                                // the vortex canvas
+    var g = f.ctx;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, f.canvas.width, f.canvas.height);
+    if (!f.on) return;
+    g.setTransform(f.s, 0, 0, f.s, 0, 0);
+    var sy0 = (window.scrollY || window.pageYOffset || 0) - f.top, vis0 = sy0 - 60, vis1 = sy0 + f.vh + 60;
+    for (var i = 0; i < f.notes.length; i++) {
+      var n = f.notes[i];
+      if (n.y < vis0 || n.y > vis1 || !vortexLook(f, n, LOOK)) continue;
+      var a = LOOK.a * Math.min(1, n.age / .8);
+      if (a >= .01) putNote(g, n, a, LOOK.sc, i);
     }
-    for (i = 0; i < f.drift.length; i++) {                        // the faint drift first, under the vortex
-      n = f.drift[i];
+  }
+  // The drift canvas, fixed on the screen: drawn from the page's scroll every frame (and on scroll when nothing moves).
+  // About 0.3 opacity; half that again behind words and cards below the header; a joined note grows into the vortex's look.
+  function drawAmbient(f) {
+    var g = f.actx, sy = (window.scrollY || window.pageYOffset || 0) - f.top;
+    if (Math.abs((window.innerHeight || 0) - f.vh) > 1 || f.amb.clientWidth !== f.aw) ambientSize(f);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, f.amb.width, f.amb.height);
+    g.setTransform(f.as, 0, 0, f.as, 0, -sy * f.as);
+    var vis0 = sy - 40, vis1 = sy + f.vh + 40, k = f.k, cov = [], drawn = 0;
+    for (var c = 0; c < f.cover.length; c++) if (f.cover[c].b > vis0 && f.cover[c].t < vis1) cov.push(f.cover[c]);
+    for (var i = 0; i < f.drift.length; i++) {
+      var n = f.drift[i];
       if (n.y < vis0 || n.y > vis1) continue;
-      var a0 = n.alpha * .36 * clamp((n.y - f.aTop) / 90, 0, 1) * clamp((f.aBottom - n.y) / 150, 0, 1) * Math.min(1, n.age / 1.6);
-      if (a0 < .01) continue;
-      put(n, a0, n.scale * .85 * KNOTE * k, i + 3);
+      var a = n.alpha * .3 * (.45 + .55 * clearOf(cov, n.x, n.y, -4)), sc = n.scale * .85 * KNOTE * k;
+      if (n.join > 0) {
+        if (!vortexLook(f, n, LOOK)) continue;
+        a += (LOOK.a - a) * n.join; sc += (LOOK.sc - sc) * n.join;
+      }
+      a *= Math.min(1, n.age / 2);
+      if (a >= .01) { putNote(g, n, a, sc, i + 3); drawn++; }
     }
-    for (i = 0; i < f.notes.length; i++) {
-      n = f.notes[i];
-      if (n.y < vis0 || n.y > vis1) continue;
-      if (f.block.length && clearOf(f.block, n.x, n.y, 4) < 1) continue;   // never over (behind) the App Store button
-      var r = Math.hypot(n.x - d.x, n.y - d.y), c = 1 - Math.min(1, r / f.reach);
-      var tf = clearOf(f.text, n.x, n.y, -4);                       // behind the words: fainter and a little smaller
-      var a = n.alpha * clamp((r - 3 * k) / (11 * k), 0, 1) * Math.min(1, n.age / .8) * (.5 + .5 * Math.sqrt(c)) * (.42 + .58 * tf);
-      if (a < .01) continue;
-      var sc = n.scale * (.28 + .72 * Math.min(1, r / (60 * k))) * KNOTE * k * (.7 + .3 * c) * (.85 + .15 * tf);
-      put(n, a, sc, i);
+    if (DEBUG) {                                     // ?hdr=debug: a fixed line about the drift, readable anywhere down the page
+      if (!f.dbg) { f.dbg = document.createElement('div'); f.dbg.style.cssText = 'position:fixed;left:8px;bottom:120px;z-index:30;font:12px ui-monospace,Menlo,monospace;color:#f0f;background:rgba(0,0,0,.6);padding:4px 6px;pointer-events:none'; document.body.appendChild(f.dbg); }
+      if (f.frames % 10 === 0) f.dbg.textContent = 'drift drawn ' + drawn + ' / ' + f.drift.length + '  scroll ' + Math.round(sy) + '  view ' + f.aw + 'x' + f.vh + ' (inner ' + innerWidth + 'x' + innerHeight + ')  canvas top ' + Math.round(f.amb.getBoundingClientRect().top) + '  frame ' + f.frames;
     }
   }
   if (PLAY) { try { FIELD = makeField(); } catch (e) { FIELD = null; } }
+  if (DEBUG && FIELD) window.__moneyField = { f: FIELD, draw: function () { drawAmbient(FIELD); }, step: function (dt) { fieldStep(FIELD, dt); } };   // ?hdr=debug: for checking from the console
 
   // Mouse alone: the money goes round instead, each piece on its own ring at its own pace (ProfileMoney.spot), LOW in
   // front of Mouse and HIGH behind. Eleven notes and three coins, as in the app.
@@ -1353,7 +1429,7 @@
       'canvas configuration: ' + (info.configured || '-'),
       'CSS dynamic-range-limit known: ' + info.limitProperty + '   lifted by ' + GAIN_MACHINE + 'x (machine), ' + GAIN_MONEY_LO + 'x to ' + GAIN_MONEY_HI + 'x (money) in encoded display-p3',
       'devicePixelRatio: ' + (window.devicePixelRatio || 1) + '   backing: ' + W + 'x' + H + '   reduced motion: ' + STILL,
-      FIELD ? 'money field: ' + FIELD.canvas.width + 'x' + FIELD.canvas.height + ' backing, ' + FIELD.notes.length + ' vortex + ' + FIELD.drift.length + ' drift notes, frame ' + (info.frameMs == null ? '-' : info.frameMs.toFixed(2) + ' ms') : '',
+      FIELD ? 'money field: ' + FIELD.canvas.width + 'x' + FIELD.canvas.height + ' backing, ' + FIELD.notes.length + ' vortex + ' + FIELD.drift.length + ' drift notes (drift canvas ' + FIELD.amb.width + 'x' + FIELD.amb.height + ', page ' + Math.round(FIELD.docH) + ' px), frame ' + (info.frameMs == null ? '-' : info.frameMs.toFixed(2) + ' ms') : '',
       'no way found to read the headroom itself: the browser clips the lift at what the screen has',
       info.notes.join('\n'),
       'picture: ' + JSON.stringify(P),
@@ -1369,8 +1445,12 @@
     var dt = Math.min(1 / 20, Math.max(0, (now - last) / 1000)); last = now;
     clock += dt;
     var t0 = DEBUG ? performance.now() : 0;
-    if (FIELD) { if (++FIELD.frames % 30 === 0) fieldGeometry(FIELD); fieldStep(FIELD, dt); } else step(dt);
-    frame(clock, true);
+    if (FIELD) {                                     // the header's washer and vortex only while the header is in view; the drift always
+      if (++FIELD.frames % 30 === 0) { fieldGeometry(FIELD); driftCount(FIELD); }
+      fieldStep(FIELD, dt);
+      if (FIELD.on) frame(clock, true);
+      drawAmbient(FIELD);
+    } else { step(dt); frame(clock, true); }
     if (DEBUG) {                                     // ?hdr=debug: what a frame costs on the main thread (step + draw)
       info.frameMs = info.frameMs == null ? performance.now() - t0 : info.frameMs * .95 + (performance.now() - t0) * .05;
       if (FIELD && FIELD.frames % 60 === 0) report();
@@ -1383,14 +1463,22 @@
 
   document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else start(); });   // a hidden tab stops drawing
   if (FIELD) {                                       // the field follows the page's layout (a turn, a fold, the fonts, pictures)
-    var relayout = function () { fieldGeometry(FIELD); if (!running) frame(0, !STILL); };
+    var relayout = function () { fieldGeometry(FIELD); driftCount(FIELD); if (!running) { frame(0, !STILL); drawAmbient(FIELD); } };
     window.addEventListener('resize', relayout);
     window.addEventListener('load', relayout);
+    if (STILL) {                                     // Reduce Motion: the drift stands still, but its canvas is fixed, so it follows the scroll
+      var queued = false;
+      window.addEventListener('scroll', function () {
+        if (queued) return; queued = true;
+        requestAnimationFrame(function () { queued = false; drawAmbient(FIELD); });
+      }, { passive: true });
+    }
   }
 
   if (STILL) {                                       // Reduce Motion: one still frame, money caught mid-stream
-    for (var w = 0; w < 75; w++) { if (FIELD) fieldStep(FIELD, 1 / 30); else step(1 / 30); }
+    for (var w = 0; w < 75; w++) { if (FIELD) vortexStep(FIELD, 1 / 30); else step(1 / 30); }   // the drift stays scattered as born
     frame(0, false);
+    if (FIELD) drawAmbient(FIELD);
   } else {
     frame(0, true);                                  // first picture at once, in ordinary colours
   }
@@ -1404,7 +1492,9 @@
   if (PLAY && !STILL) {
     if (window.IntersectionObserver) {
       new IntersectionObserver(function (es) {
-        onScreen = es[es.length - 1].isIntersecting;
+        var seen = es[es.length - 1].isIntersecting;
+        if (FIELD) { FIELD.on = seen; return; }      // the drift runs the whole page down: only the header's part rests
+        onScreen = seen;
         if (!onScreen) stop(); else if (!document.hidden) start();
       }).observe(FIELD ? FIELD.canvas : canvas);
     }
