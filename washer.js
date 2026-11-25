@@ -26,6 +26,13 @@
  *                                                  ?hdr=debug outline every lifted part and print what was found
  *                                                  ?hdr=force try the HDR layer even when the browser says "standard"
  *                                                  (combine: ?hdr=debug,force)
+ *
+ * The home page's header (index.html) asks for the play field with `<canvas id="washer" data-play="touch hover">`:
+ * a bigger, transparent-edged box (440 x 400) with the washer and Mouse inside it, twice the money, and the money
+ * reacting to a finger as on the app's lock screen (MoneySwirl.swift: LockTouch and MoneyFlow.step / scatter / fling).
+ * `touch` = a press or drag shoves and drags the notes, a tap scatters them, a flick throws them; `hover` = a mouse
+ * with no button down pushes them too, more gently. The loop also pauses while the canvas is off screen. Without
+ * `data-play` (u.html, r.html) nothing of this exists and the picture is exactly as before.
  */
 (function () {
   'use strict';
@@ -33,6 +40,8 @@
   var canvas = document.getElementById('washer');
   if (!canvas || !canvas.getContext) return;
   var art = canvas.parentNode;
+  var PLAYS = (canvas.getAttribute('data-play') || '').split(/\s+/);
+  var PLAY = canvas.hasAttribute('data-play'), HOVER = PLAY && PLAYS.indexOf('hover') >= 0;
 
   // ---- switches -------------------------------------------------------------------------------------------------
   var flags = (/[?&]hdr=([^&#]*)/.exec(location.search) || [0, ''])[1].split(',');
@@ -42,10 +51,10 @@
   // ---- sizes ----------------------------------------------------------------------------------------------------
   // The picture is drawn in a 320 x 232 box (CSS px at full size); the washer is a 180 square inside it, centred on
   // its porthole so the door side balances the body. The canvas scales with the page; the backing store is at most 2x.
-  var LW = 320, LH = 232;
+  var LW = PLAY ? 440 : 320, LH = PLAY ? 400 : 232;   // the play field: about an iPhone's width of room round the machine
   var S = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
   var W = Math.round(LW * S), H = Math.round(LH * S);
-  var SIZE = 180, OX = 77, OY = 22;                 // washer square: side, and where its top-left sits in the box
+  var SIZE = PLAY ? 235 : 180, OX = PLAY ? 140 : 77, OY = PLAY ? 80 : 22;   // washer square: side, and where its top-left sits in the box
   var DOOR = { x: OX + 0.46 * SIZE, y: OY + 0.63 * SIZE };   // where the money goes in (the porthole's centre)
 
   function layer() { var c = document.createElement('canvas'); c.width = W; c.height = H; return c; }
@@ -852,6 +861,7 @@
   function between(a, b) { return a + (b - a) * rnd(); }
 
   var COUNT = 17, COINS = [3, 8, 13];                // fourteen notes and three coins (the app: 61, one in five a coin, on a whole screen)
+  if (PLAY) { COUNT = 30; COINS = [2, 7, 12, 17, 22, 27]; }   // the play field: about the app's density for its area
   function born(x, y) {                              // MoneyFlow.born
     return { x: x, y: y, vx: 0, vy: 0, angle: between(0, 6.2832), spin: between(-1.5, 1.5), flip: between(0, 6.2832),
              coin: false, scale: between(.75, 1.25), alpha: between(.75, 1) };
@@ -873,6 +883,50 @@
   }
   var REACH = Math.max(Math.hypot(DOOR.x, DOOR.y), Math.hypot(LW - DOOR.x, DOOR.y), Math.hypot(DOOR.x, LH - DOOR.y), Math.hypot(LW - DOOR.x, LH - DOOR.y));
 
+  // ---- the finger (the lock screen's LockTouch numbers, in points on a 440-point-wide phone; scaled by TS to this field) ----
+  var TS = LW / 440;
+  var TOUCH = { reach: 240 * TS, shove: 6000 * TS, carry: 16, tapReach: 280 * TS, tapPush: 1100 * TS,
+                flickReach: 230 * TS, flickSpeed: 450 * TS, flickCarry: .9, flickMax: 2600 * TS, hover: .35 };
+  var finger = null;                                 // { x, y, vx, vy, seen (s), power } in field units, or null
+  function nowS() { return performance.now() / 1000; }
+  function scatter(px, py) {                         // MoneyFlow.scatter: a tap knocks the notes near it away
+    notes.forEach(function (n) {
+      var dx = n.x - px, dy = n.y - py, d = Math.max(1, Math.hypot(dx, dy));
+      if (d >= TOUCH.tapReach) return;
+      var k = Math.pow(1 - d / TOUCH.tapReach, .7), a = Math.atan2(dy, dx) + (Math.random() - .5);
+      var sp = TOUCH.tapPush * k * (.7 + .4 * Math.random());
+      n.vx += Math.cos(a) * sp; n.vy += Math.sin(a) * sp; n.spin += (Math.random() * 18 - 9) * k;
+    });
+  }
+  function fling(px, py, vx, vy) {                   // MoneyFlow.fling: a flick throws the notes near where it let go
+    notes.forEach(function (n) {
+      var d = Math.hypot(n.x - px, n.y - py);
+      if (d >= TOUCH.flickReach) return;
+      var k = 1 - d / TOUCH.flickReach, dx = vx * TOUCH.flickCarry * k, dy = vy * TOUCH.flickCarry * k, sp = Math.hypot(dx, dy);
+      if (sp > TOUCH.flickMax) { dx *= TOUCH.flickMax / sp; dy *= TOUCH.flickMax / sp; }
+      n.vx += dx; n.vy += dy; n.spin += k * (Math.random() * 20 - 10);
+    });
+  }
+  // What a finger adds on top of the stream (MoneyFlow.step): shove away from it, drag along with its movement; the
+  // added speed dies away, and a finger that stops reporting fades out over 1.2 s. Knocked well off the box: born again.
+  function push(n, dt) {
+    if (finger) {
+      var fp = Math.max(0, 1 - (nowS() - finger.seen) / 1.2) * finger.power;
+      var fx = n.x - finger.x, fy = n.y - finger.y, fr = Math.max(1, Math.hypot(fx, fy));
+      if (fp > 0 && fr < TOUCH.reach) {
+        var k = (1 - fr / TOUCH.reach) * fp;
+        n.vx += fx / fr * TOUCH.shove * k * dt + finger.vx * k * TOUCH.carry * dt;
+        n.vy += fy / fr * TOUCH.shove * k * dt + finger.vy * k * TOUCH.carry * dt;
+        n.spin += k * 7 * dt;
+      }
+    }
+    var fade = Math.pow(.12, dt);
+    n.vx *= fade; n.vy *= fade;
+    n.x += n.vx * dt; n.y += n.vy * dt;
+    n.spin *= Math.pow(.5, dt);
+    return n.x < -70 || n.x > LW + 70 || n.y < -70 || n.y > LH + 70;
+  }
+
   function step(dt) {                                // MoneyFlow.step, the part that moves the notes
     for (var i = 0; i < notes.length; i++) {
       var n = notes[i];
@@ -887,7 +941,8 @@
       n.flip += dt * (1 + closeness * closeness * 5);
       n.spin += (n.coin ? .4 : .9) * dt * (i % 2 ? -1 : 1);
       if (Math.abs(n.spin) > 2.4) n.spin *= Math.pow(.5, dt);
-      if (Math.hypot(DOOR.x - n.x, DOOR.y - n.y) < 5) {         // swallowed
+      var off = PLAY && push(n, dt);
+      if (off || Math.hypot(DOOR.x - n.x, DOOR.y - n.y) < 5) {  // swallowed (or, in the play field, knocked off the box)
         var e = onEdge(), coin = n.coin;
         n = born(e[0], e[1]); n.coin = coin; if (coin) n.scale *= .9; notes[i] = n;
       }
@@ -940,7 +995,7 @@
   }
 
   // Draws the money in front of the machine (the flow).
-  var KNOTE = 1.2;                                   // the app's notes are 22 x 12 pt on a screen; this picture is smaller than a screen
+  var KNOTE = PLAY ? 1.3 : 1.2;                                   // the app's notes are 22 x 12 pt on a screen; this picture is smaller than a screen
   function drawMoney(m, l, k) {
     for (var i = 0; i < notes.length; i++) {
       var n = notes[i];
@@ -1126,6 +1181,7 @@
         }
       };
       gpuCanvas.className = 'hdr';
+      if (PLAY) gpuCanvas.style.pointerEvents = 'none';   // the finger goes to the picture underneath
       art.appendChild(gpuCanvas);
       info.approach = 'WebGPU rgba16float canvas, toneMapping extended, over the 2D canvas';
       info.canvas = gpuCanvas;
@@ -1165,7 +1221,8 @@
     frame(clock, true);
     rafId = requestAnimationFrame(tick);
   }
-  function start() { if (running || STILL) return; running = true; last = performance.now(); rafId = requestAnimationFrame(tick); }
+  var onScreen = true;                               // the play field pauses while it is scrolled out of view
+  function start() { if (running || STILL || !onScreen) return; running = true; last = performance.now(); rafId = requestAnimationFrame(tick); }
   function stop() { running = false; if (rafId) cancelAnimationFrame(rafId); rafId = 0; }
 
   document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else start(); });   // a hidden tab stops drawing
@@ -1181,6 +1238,52 @@
     if (STILL) frame(0, false); else start();
   });
   if (!STILL && !document.hidden) start();
+
+  // ---- the play field: off-screen pause and the finger (data-play only) -------------------------------------------
+  if (PLAY && !STILL) {
+    if (window.IntersectionObserver) {
+      new IntersectionObserver(function (es) {
+        onScreen = es[es.length - 1].isIntersecting;
+        if (!onScreen) stop(); else if (!document.hidden) start();
+      }).observe(canvas);
+    }
+    var down = null, trail = [];                     // the press (where and when it began) and the last ~100 ms of moves
+    var here = function (e) {
+      var r = canvas.getBoundingClientRect();
+      return { x: (e.clientX - r.left) * LW / Math.max(1, r.width), y: (e.clientY - r.top) * LH / Math.max(1, r.height), t: e.timeStamp / 1000 };
+    };
+    var report_ = function (p, power) {              // FingerTracker.onMove: position, velocity since the last report
+      var vx = 0, vy = 0;
+      if (finger && finger.t != null) { var d = Math.max(1 / 240, p.t - finger.t); vx = (p.x - finger.x) / d; vy = (p.y - finger.y) / d; }
+      finger = { x: p.x, y: p.y, vx: vx, vy: vy, t: p.t, seen: nowS(), power: power };
+      trail.push(p); while (trail.length > 2 && p.t - trail[1].t > .1) trail.shift();   // keep one move from just before the window
+    };
+    canvas.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      var p = here(e); down = { x: p.x, y: p.y, t: p.t, id: e.pointerId }; trail = []; finger = null;
+      if (e.pointerType === 'mouse') { try { canvas.setPointerCapture(e.pointerId); } catch (x) {} }
+      report_(p, 1);
+    });
+    canvas.addEventListener('pointermove', function (e) {
+      if (down && e.pointerId === down.id) { report_(here(e), 1); return; }
+      if (!down && HOVER && e.pointerType === 'mouse' && !e.buttons) report_(here(e), TOUCH.hover);
+    });
+    var end = function (e, cancelled) {
+      if (!down || e.pointerId !== down.id) return;
+      var p = here(e), was = down; down = null;
+      if (!cancelled) {
+        var first = trail[0], dt = first ? p.t - first.t : 0, ok = dt > .012 && dt < .25;   // the speed over the last ~0.1 s
+        var vx = ok ? (p.x - first.x) / dt : 0, vy = ok ? (p.y - first.y) / dt : 0;
+        if (Math.hypot(vx, vy) > TOUCH.flickSpeed) fling(p.x, p.y, vx, vy);
+        else if (Math.hypot(p.x - was.x, p.y - was.y) < 12 * TS && p.t - was.t < .35) scatter(p.x, p.y);
+      }
+      finger = null; trail = [];                    // FingerTracker.onEnd: the finger is gone; what it gave the notes dies away
+      if (HOVER && e.pointerType === 'mouse' && !cancelled) report_(p, TOUCH.hover);
+    };
+    canvas.addEventListener('pointerup', function (e) { end(e, false); });
+    canvas.addEventListener('pointercancel', function (e) { end(e, true); });   // the page took the touch to scroll
+    canvas.addEventListener('pointerleave', function (e) { if (!down && e.pointerType === 'mouse') finger = null; });
+  }
 
   // ---- someone's own look ------------------------------------------------------------------------------------------
   // card.js hands over the public card (`GET /v1/referrals/profiles/<name>`: `card`, plus the service's own founder and
