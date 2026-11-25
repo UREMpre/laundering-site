@@ -1,0 +1,72 @@
+/* "The deck": ten sort cards from the app, drawn in HTML, in a Cover Flow (flow.js).
+   Card sizes follow the app's 360-point card: inside .face, 1em = 10 points of that card, whatever its width. */
+.flow { position: relative; width: 100vw; margin-left: calc(-1 * var(--bl)); margin-top: -1.5rem; margin-bottom: 1rem;
+        /* Bleeds to the screen's edges like the screenshot row, with the same soft fades. */
+        -webkit-mask-image: linear-gradient(to right, transparent, #000 calc(var(--gl) + 1.5rem), #000 calc(100% - var(--gr) - 1.5rem), transparent);
+        mask-image: linear-gradient(to right, transparent, #000 calc(var(--gl) + 1.5rem), #000 calc(100% - var(--gr) - 1.5rem), transparent); }
+.flow-stage { --cw: clamp(260px, 72vw, 300px); position: relative; height: calc(var(--cw) * 1.28 + 9rem); overflow: hidden; overflow-x: clip; overflow-y: visible;
+              perspective: 1100px; perspective-origin: var(--fx, 46%) 38%; touch-action: pan-y; cursor: grab;
+              user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; outline: none; }
+.flow-stage.dragging { cursor: grabbing; }
+.flow-stage:focus-visible { box-shadow: inset 0 0 0 2px rgba(95,224,165,.5); border-radius: 24px; }
+@media (min-width: 700px) { .flow-stage { --cw: 300px; --fx: 42%; } }
+@media (min-width: 1100px) { .flow-stage { --cw: 320px; --fx: 40%; } }
+/* The floor: a soft pool of shadow under the card in front. */
+.flow-stage::before { content: ""; position: absolute; left: var(--fx, 46%); top: calc(5rem + var(--cw) * 1.28 - 18px); width: calc(var(--cw) * 1.5); height: 60px;
+                      transform: translateX(-50%); border-radius: 50%; pointer-events: none;
+                      background: radial-gradient(closest-side, rgba(0,0,0,.55), rgba(0,0,0,.18) 60%, transparent); }
+.flow-track { position: absolute; left: var(--fx, 46%); top: 5rem; width: 0; height: 0; transform-style: preserve-3d;
+              /* a few degrees of tilt: looking down at the floor a little */
+              transform: rotateX(4deg); }
+.flow-card { position: absolute; left: calc(var(--cw) / -2); top: 0; width: var(--cw); height: calc(var(--cw) * 1.28);
+             will-change: transform, opacity; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+             -webkit-box-reflect: below 6px linear-gradient(transparent 74%, rgba(255,255,255,.11)); }
+.flow-card .face { position: absolute; inset: 0; container-type: inline-size; border-radius: calc(var(--cw) * 28 / 360); overflow: hidden;
+                   color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 18px 40px rgba(0,0,0,.35); }
+.flow-card .in { position: absolute; inset: 0; font-size: calc(100cqw / 36); font-family: -apple-system, system-ui, sans-serif; }
+/* backdropLayer: the category's colour, lighter at the top, darker at the foot, its symbol huge and faint */
+.flow-card .bg { position: absolute; inset: 0; background: linear-gradient(var(--c1), var(--c2)); }
+.flow-card .bigsym { position: absolute; width: 22em; height: 22em; left: 50%; top: 50%; margin: -11em 0 0 -11em;
+                     transform: translate(7em, -9em) rotate(-12deg); color: rgba(255,255,255,.08); }
+.flow-card .scrim { position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0,0,0,.45) 58%, rgba(0,0,0,.92)); }
+/* the avatar: a monogram tile in the category's colour (no logos for made-up shops) */
+.flow-card .tile { position: absolute; left: 50%; top: 3.4em; width: 11em; height: 11em; margin-left: -5.5em; border-radius: 2.75em;
+                   background: linear-gradient(135deg, var(--t1), var(--t2)); box-shadow: inset 0 0 0 .3em rgba(255,255,255,.92), 0 .8em 1.6em rgba(0,0,0,.35);
+                   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .44em; }
+.flow-card .tile b { font: 900 5.06em/1 ui-rounded, -apple-system, system-ui, sans-serif; }
+.flow-card .tile svg { width: 1.9em; height: 1.9em; opacity: .85; }
+.flow-card .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 2em; display: flex; flex-direction: column; gap: .9em; }
+.flow-card .top { display: flex; align-items: baseline; gap: 1em; white-space: nowrap; }
+.flow-card .name { font: 700 2.8em/1.15 ui-rounded, -apple-system, system-ui, sans-serif; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.flow-card .amt { font: 500 2.2em/1.15 ui-rounded, -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; opacity: .92; flex: none; }
+.flow-card .det { font-size: 1.5em; line-height: 1.3; opacity: .85; display: flex; gap: .55em; align-items: center; }
+.flow-card .det svg { width: 1.05em; height: 1.05em; flex: none; }
+.flow-card .acct { font-size: 1.2em; opacity: .7; margin-top: -.2em; }
+.flow-card .roast { display: flex; gap: .8em; align-items: flex-start; opacity: .95; padding-top: .2em; }
+.flow-card .roast svg { width: 1.5em; height: 1.5em; flex: none; margin-top: .25em; }
+.flow-card .roast i { font-size: 1.6em; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+/* The verdict, as the deck stamps it: CLEAN top left at -14°, DIRTY top right at 14° */
+.flow-card .stamp { position: absolute; top: .65em; font: 900 3.4em/1 ui-rounded, -apple-system, system-ui, sans-serif; letter-spacing: .06em;
+                    padding: .18em .41em; border: .12em solid currentColor; border-radius: .3em; text-shadow: 0 .06em .12em rgba(0,0,0,.3);
+                    box-shadow: 0 .06em .12em rgba(0,0,0,.18); }
+.flow-card .stamp.clean { left: .65em; color: #4dde9e; transform: rotate(-14deg); }
+.flow-card .stamp.dirty { right: .65em; color: #ff736b; transform: rotate(14deg); }
+.flow-card.front .stamp { animation: flow-thunk .42s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes flow-thunk { from { opacity: 0; scale: 1.6; } to { opacity: 1; scale: 1; } }
+/* The washer answering back (`Shame.excuse`): only over the card in front */
+.flow-card .quip { position: absolute; left: 50%; bottom: calc(100% + 8px); width: max-content; max-width: calc(var(--cw) * 1.05); transform: translateX(-50%);
+                   padding: .5rem 1rem; border-radius: 20px; text-align: center; color: #fff; font-size: 13.5px; line-height: 1.3; font-weight: 600;
+                   background: rgba(255,181,46,.22); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,.16);
+                   opacity: 0; transition: opacity .3s ease .25s; pointer-events: none; }
+.flow-card .quip small { display: block; font-size: 11px; font-weight: 400; color: rgba(255,255,255,.6); margin-top: 2px; }
+.flow-card.front .quip { opacity: 1; }
+.flow-ui { display: flex; justify-content: center; gap: .5rem; margin-top: -1.4rem; position: relative; z-index: 2; }
+.flow-ui button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--soft);
+                  font: 600 16px/1 -apple-system, system-ui, sans-serif; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.flow-ui button:hover { color: #fff; background: rgba(255,255,255,.12); }
+.flow-ui button svg { width: 16px; height: 16px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .flow-card.front .stamp { animation: none; }
+  .flow-card .quip { transition: none; }
+}
