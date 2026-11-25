@@ -173,12 +173,26 @@
     .phone { width: 100%; height: auto; max-width: 330px; justify-self: center; border-radius: 28px; box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 0 90px rgba(95,224,165,.12); }
     /* The header's washer and money (washer.js, data-play): a transparent-edged field the money can be pushed round in.
        pan-y: a vertical swipe still scrolls the page; presses, drags and taps go to the money. */
-    .hero .art { position: relative; width: calc(100% + 3rem); max-width: 560px; aspect-ratio: 440 / 400; justify-self: center; margin: -1rem -1.5rem;
+    .hero .art { position: relative; width: calc(100% + 3rem); max-width: 560px; justify-self: center; margin: -1rem -1.5rem;
                  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
     .hero .art::before { content: ""; position: absolute; inset: 14% 12%; border-radius: 50%; pointer-events: none;
                          background: radial-gradient(closest-side, rgba(52,211,153,.18), rgba(167,139,250,.09) 65%, transparent); }
-    .hero .art canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: pan-y; }
-    .hero .art canvas.hdr { pointer-events: none; }
+    /* The canvas keeps its own shape (its width and height are the field's, 440 x 400): no aspect-ratio box to fall out of
+       step with it (Nov 25: stretched taller on the founder's iPhone Duo). The HDR layer lies exactly over it. */
+    .hero .art canvas { display: block; width: 100%; height: auto; touch-action: pan-y; }
+    .hero .art canvas.hdr { position: absolute; inset: 0; height: 100%; pointer-events: none; }
+    /* Our own download bar: Safari's app banner scrolls away, this one slides in once the App Store button is out of sight. */
+    .getbar { position: fixed; z-index: 20; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: .75rem;
+              padding: calc(.55rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) .55rem max(1rem, env(safe-area-inset-left));
+              background: rgba(15,16,32,.78); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+              border-bottom: 1px solid var(--line); transform: translateY(-110%); transition: transform .28s ease; }
+    .getbar.on { transform: none; }
+    .getbar img { width: 40px; height: 40px; border-radius: 10px; flex: none; }
+    .getbar .t { flex: 1; min-width: 0; line-height: 1.2; }
+    .getbar .t b { display: block; font-size: 15px; }
+    .getbar .t span { display: block; font-size: 13px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .getbar a { flex: none; padding: .45rem 1.1rem; border-radius: 999px; background: var(--mint); color: #0f1020; font-weight: 800; text-decoration: none; font-size: 15px; }
+    @media (prefers-reduced-motion: reduce) { .getbar { transition: none; } }
     section { padding: 3.5rem 0; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.5rem; }
     .card { padding: 1.2rem 1.25rem; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
@@ -224,6 +238,11 @@
   <noscript><style>.hero .art { display: none; }</style></noscript>
 </head>
 <body>
+  <div class="getbar" id="getbar" aria-hidden="true">
+    <img src="/icon-192.png" width="40" height="40" alt="">
+    <div class="t"><b>Money Laundering</b><span>Budget, bills &amp; a judgy cat</span></div>
+    <a href="https://apps.apple.com/app/id6831441351" tabindex="-1">Get</a>
+  </div>
   <div class="wrap">
     <header class="hero">
       <div>
@@ -231,7 +250,7 @@
         <h1>Launder your money. Legally.</h1>
         <p class="lede">A budget app and spending tracker for iPhone that gives you one number to live by each day, sorts every charge clean or dirty, and roasts you about it. Do it for the cat.</p>
         <div class="cta">
-          <a class="button" href="https://apps.apple.com/app/id6831441351">Download on the App Store</a>
+          <a class="button" id="get" href="https://apps.apple.com/app/id6831441351">Download on the App Store</a>
           <span class="fine">Free to try. Made for iPhone 18 Pro and iPhone Duo, with Apple Watch and iMessage.</span>
         </div>
       </div>
@@ -353,5 +372,18 @@
     <footer>Money Laundering is a budgeting app. It does not move, hold or launder money.<br>&copy; 2026 615 Media Group, LLC &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/diy">Use your own keys</a> &middot; <a href="/ynab-alternative">YNAB alternative</a> &middot; <a href="/mint-alternative">Mint alternative</a> &middot; <a href="/press">Press</a> &middot; <a href="mailto:support@laundering.app">support@laundering.app</a></footer>
   </div>
   <script src="washer.js"></script>
+  <script>
+    // The download bar: in while the header's App Store button is out of sight, out again when it's back.
+    (function () {
+      var bar = document.getElementById('getbar'), cta = document.getElementById('get');
+      if (!bar || !cta || !('IntersectionObserver' in window)) return;
+      new IntersectionObserver(function (es) {
+        var out = !es[0].isIntersecting && es[0].boundingClientRect.top < 0;
+        bar.classList.toggle('on', out);
+        bar.setAttribute('aria-hidden', out ? 'false' : 'true');
+        bar.querySelector('a').tabIndex = out ? 0 : -1;
+      }).observe(cta);
+    })();
+  </script>
 </body>
 </html>
