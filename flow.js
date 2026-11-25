@@ -148,6 +148,26 @@
     })(t0);
   }
   function stepBy(k) { go(Math.round(pos) + k); }
+  // Scrubbing like Cover Flow (founder, Nov 25: "more of a tap per page right now, want a smooth drag back and forth that
+  // settles on a tile"): a card per ~third of a card's width of finger travel, and a throw that glides on with friction and
+  // eases onto the card it ends nearest.
+  function dragPx() { return Math.max(70, cw * 0.36); }
+  function coast(v) {
+    cancelAnimationFrame(anim && anim.raf);
+    if (calm() || Math.abs(v) < 0.6) { go(Math.round(pos + v * 0.12)); return; }
+    v = Math.max(-14, Math.min(14, v));
+    var last = performance.now();
+    anim = { raf: 0 };
+    (function glide(now) {
+      var dt = Math.min(0.05, (now - last) / 1000); last = now;
+      pos += v * dt;
+      v *= Math.exp(-dt * 3.2);           // friction
+      render();
+      if (Math.abs(v) > 1.6) { anim.raf = requestAnimationFrame(glide); return; }
+      anim = null;
+      go(Math.round(pos + v * 0.18));     // settle on the nearest card ahead
+    })(last);
+  }
 
   // Autoplay: every 2.8 s while on screen, the tab is showing and nobody is touching it.
   var visible = false, held = false, stopped = calm(), timer = 0, resumeAt = 0;
@@ -169,19 +189,20 @@
     samples = [{ t: e.timeStamp, x: e.clientX }];
     held = true;
   });
-  stage.addEventListener("pointermove", function (e) {
+  // Moves and the lift are followed on the window, not by capturing the pointer: iOS Safari dropped the capture a few
+  // frames into a drag, which ended it after one card ("more of a tap per page").
+  window.addEventListener("pointermove", function (e) {
     if (!down || e.pointerId !== down.id) return;
     var dx = e.clientX - down.x, dy = e.clientY - down.y;
     if (!dragging) {
       if (Math.abs(dx) < 7 || Math.abs(dx) < Math.abs(dy)) return;
       dragging = true;
       stage.classList.add("dragging");
-      try { stage.setPointerCapture(e.pointerId); } catch (_) {}
       if (anim) { cancelAnimationFrame(anim.raf); anim = null; down.pos = pos; down.x = e.clientX; dx = 0; }
     }
-    pos = down.pos - dx / (cw * 0.62);
+    pos = down.pos - dx / dragPx();
     samples.push({ t: e.timeStamp, x: e.clientX });
-    if (samples.length > 6) samples.shift();
+    if (samples.length > 12) samples.shift();
     render();
   });
   function release(e) {
@@ -189,10 +210,11 @@
     var was = dragging;
     stage.classList.remove("dragging");
     if (was) {
-      var a = samples[0], b = samples[samples.length - 1], dt = Math.max(16, b.t - a.t);
-      var v = -(b.x - a.x) / dt * 1000 / (cw * 0.62); // cards per second
-      var target = Math.round(pos + Math.max(-3, Math.min(3, v * 0.22)));
-      go(target);
+      // Only the last ~90 ms of the drag decide the throw (an old sample would slow it).
+      var b = samples[samples.length - 1], a = b;
+      for (var k = samples.length - 1; k >= 0; k--) { if (b.t - samples[k].t > 90) break; a = samples[k]; }
+      var dt = Math.max(16, b.t - a.t);
+      coast(-(b.x - a.x) / dt * 1000 / dragPx());   // cards per second
     } else if (e && e.type === "pointerup") {
       // A tap on a side card brings it to the front.
       var card = down.target.closest && down.target.closest(".flow-card");
@@ -203,9 +225,8 @@
     holdFor(e && e.pointerType === "mouse" ? 2000 : 4000);
     schedule();
   }
-  stage.addEventListener("pointerup", release);
-  stage.addEventListener("pointercancel", release);
-  stage.addEventListener("lostpointercapture", function (e) { if (dragging) release(e); });
+  window.addEventListener("pointerup", release);
+  window.addEventListener("pointercancel", release);
 
   var hovering = false;
   stage.addEventListener("pointerenter", function (e) { if (e.pointerType === "mouse") { hovering = true; held = true; } });
