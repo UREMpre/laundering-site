@@ -28,13 +28,19 @@
 .flow-card .bg { position: absolute; inset: 0; background: linear-gradient(var(--c1), var(--c2)); }
 .flow-card .bigsym { position: absolute; width: 22em; height: 22em; left: 50%; top: 50%; margin: -11em 0 0 -11em;
                      transform: translate(7em, -9em) rotate(-12deg); color: rgba(255,255,255,.08); }
+/* the map of where the charge happened (flow-art.js: made up, drawn once), over the whole card as in the app */
+.flow-card .map { position: absolute; inset: 0; background: center / cover no-repeat; }
 .flow-card .scrim { position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0,0,0,.45) 58%, rgba(0,0,0,.92)); }
-/* the avatar: a monogram tile in the category's colour (no logos for made-up shops) */
+/* the avatar: the shop's logo (flow-art.js), or a monogram tile in the category's colour */
 .flow-card .tile { position: absolute; left: 50%; top: 3.4em; width: 11em; height: 11em; margin-left: -5.5em; border-radius: 2.75em;
                    background: linear-gradient(135deg, var(--t1), var(--t2)); box-shadow: inset 0 0 0 .3em rgba(255,255,255,.92), 0 .8em 1.6em rgba(0,0,0,.35);
                    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .44em; }
 .flow-card .tile b { font: 900 5.06em/1 ui-rounded, -apple-system, system-ui, sans-serif; }
 .flow-card .tile svg { width: 1.9em; height: 1.9em; opacity: .85; }
+/* a made-up shop's logo fills the tile; the white rim is drawn over it */
+.flow-card .tile.logo { overflow: hidden; background: none; }
+.flow-card .tile.logo > svg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 1; }
+.flow-card .tile.logo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 .3em rgba(255,255,255,.92); }
 .flow-card .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 2em; display: flex; flex-direction: column; gap: .9em; }
 .flow-card .top { display: flex; align-items: baseline; gap: 1em; white-space: nowrap; }
 .flow-card .name { font: 700 2.8em/1.15 ui-rounded, -apple-system, system-ui, sans-serif; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
