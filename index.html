@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Money Laundering: Budget App &amp; Spending Tracker for iPhone (that roasts you)</title>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
@@ -140,11 +140,15 @@
 }
   </script>
   <style>
-    :root { color-scheme: dark; --ink: #f5f5f7; --soft: #d5d6e6; --dim: #9a9cb5; --mint: #5fe0a5; --card: rgba(255,255,255,.07); --line: rgba(255,255,255,.11); }
+    :root { color-scheme: dark; --ink: #f5f5f7; --soft: #d5d6e6; --dim: #9a9cb5; --mint: #5fe0a5; --card: rgba(255,255,255,.07); --line: rgba(255,255,255,.11);
+            /* side gutters: never less than 1.25rem, and clear of the safe areas (the Duo's camera column, a phone on its side) */
+            --gl: max(1.25rem, env(safe-area-inset-left)); --gr: max(1.25rem, env(safe-area-inset-right));
+            /* from the screen's edge to the content column's edge (the column is 68rem wide at most, centred) */
+            --bl: calc(max(0px, (100vw - 68rem) / 2) + var(--gl)); --br: calc(max(0px, (100vw - 68rem) / 2) + var(--gr)); }
     * { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; }
-    body {
-      margin: 0; font: 17px/1.55 -apple-system, system-ui, "Segoe UI", sans-serif; color: var(--ink);
+    /* The background is on html so it also paints under the safe areas (viewport-fit=cover). */
+    html {
+      -webkit-text-size-adjust: 100%; min-height: 100%; background-color: #0f1020;
       background:
         radial-gradient(60rem 40rem at 85% -10%, #b4551f 0%, transparent 60%),
         radial-gradient(50rem 40rem at -10% 35%, #12705f 0%, transparent 60%),
@@ -152,8 +156,9 @@
         radial-gradient(50rem 40rem at 100% 75%, #4a2bb0 0%, transparent 60%),
         #0f1020;
     }
+    body { margin: 0; font: 17px/1.55 -apple-system, system-ui, "Segoe UI", sans-serif; color: var(--ink); overflow-x: clip; }
     a { color: var(--mint); }
-    .wrap { width: min(68rem, 100%); margin: 0 auto; padding: 0 1.25rem; }
+    .wrap { width: min(68rem, 100%); margin: 0 auto; padding: 0 var(--gr) 0 var(--gl); }
     header.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2.5rem; align-items: center; padding: 4.5rem 0 3rem; }
     .eyebrow { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--mint); font-weight: 700; }
     h1 { font-size: clamp(2.5rem, 7vw, 4.2rem); line-height: 1.02; margin: .4rem 0 1rem; letter-spacing: -.025em; }
@@ -165,16 +170,29 @@
     .button { display: inline-block; padding: .85rem 1.4rem; border-radius: 999px; background: var(--ink); color: #0f1020; font-weight: 700; text-decoration: none; }
     .button:hover { background: #fff; }
     .fine { font-size: 14px; color: var(--dim); }
-    .phone { width: 100%; height: auto; max-width: 330px; justify-self: center; border-radius: 28px; box-shadow: 0 30px 80px rgba(0,0,0,.45); }
+    .phone { width: 100%; height: auto; max-width: 330px; justify-self: center; border-radius: 28px; box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 0 90px rgba(95,224,165,.12); }
+    /* The header's washer and money (washer.js, data-play): a transparent-edged field the money can be pushed round in.
+       pan-y: a vertical swipe still scrolls the page; presses, drags and taps go to the money. */
+    .hero .art { position: relative; width: calc(100% + 3rem); max-width: 560px; aspect-ratio: 440 / 400; justify-self: center; margin: -1rem -1.5rem;
+                 user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+    .hero .art::before { content: ""; position: absolute; inset: 14% 12%; border-radius: 50%; pointer-events: none;
+                         background: radial-gradient(closest-side, rgba(52,211,153,.18), rgba(167,139,250,.09) 65%, transparent); }
+    .hero .art canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: pan-y; }
+    .hero .art canvas.hdr { pointer-events: none; }
     section { padding: 3.5rem 0; }
     .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.5rem; }
     .card { padding: 1.2rem 1.25rem; border-radius: 18px; background: var(--card); border: 1px solid var(--line); }
     .card p { margin: 0; font-size: 15.5px; }
     .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #0f1020; background: var(--mint); padding: .15rem .5rem; border-radius: 6px; margin-bottom: .5rem; }
-    .shots { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 240px); gap: 1rem; overflow-x: auto; padding: 1.5rem 0 1rem; scroll-snap-type: x mandatory; }
+    /* Full bleed: the row runs to the screen's edges (into the safe areas), the first picture lines up with the text,
+       and both ends fade out instead of cutting off. */
+    .shots { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 240px); gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory;
+             width: 100vw; margin-left: calc(-1 * var(--bl)); padding: 1.5rem var(--br) 2.5rem var(--bl); scroll-padding-inline: var(--bl) var(--br);
+             -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--gl), #000 calc(100% - var(--gr)), transparent);
+             mask-image: linear-gradient(to right, transparent, #000 var(--gl), #000 calc(100% - var(--gr)), transparent); }
     .shots img { width: 100%; height: auto; border-radius: 22px; scroll-snap-align: start; box-shadow: 0 16px 40px rgba(0,0,0,.35); }
     .split { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; }
-    .split img { width: 100%; height: auto; max-width: 300px; border-radius: 24px; justify-self: center; box-shadow: 0 24px 60px rgba(0,0,0,.4); }
+    .split img { width: 100%; height: auto; max-width: 300px; border-radius: 24px; justify-self: center; box-shadow: 0 24px 60px rgba(0,0,0,.4), 0 0 90px rgba(95,224,165,.12); }
     .table-wrap { overflow-x: auto; margin-top: 1.5rem; border-radius: 18px; border: 1px solid var(--line); background: var(--card); }
     table { width: 100%; border-collapse: collapse; min-width: 720px; font-size: 15px; }
     th, td { padding: .75rem .8rem; text-align: center; border-bottom: 1px solid var(--line); }
@@ -199,8 +217,11 @@
       .grid { grid-template-columns: 1fr; }
       .price { grid-template-columns: 1fr; }
       .phone { max-width: 280px; }
+      .hero .art { width: calc(100% + var(--gl) + var(--gr)); max-width: 520px; margin: -1.5rem 0 -1rem; }
     }
+    @media (max-width: 520px) { .hero .art { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); justify-self: stretch; } }
   </style>
+  <noscript><style>.hero .art { display: none; }</style></noscript>
 </head>
 <body>
   <div class="wrap">
@@ -214,7 +235,8 @@
           <span class="fine">Free to try. Made for iPhone 18 Pro and iPhone Duo, with Apple Watch and iMessage.</span>
         </div>
       </div>
-      <img class="phone" src="/img/shot-01.jpg" width="460" height="1000" alt="The Today screen: one number you can spend today, with a washer of rings and money spinning">
+      <div class="art"><canvas id="washer" data-play="touch hover" width="880" height="800" role="img" aria-label="A washing machine with banknotes flying in, and Mouse the cat sitting beside it. Touch the money to push it around."></canvas></div>
+      <noscript><img class="phone" src="/img/shot-01.jpg" width="460" height="1000" alt="The Today screen: one number you can spend today, with a washer of rings and money spinning"></noscript>
     </header>
   </div>
 
@@ -330,5 +352,6 @@
   <div class="wrap">
     <footer>Money Laundering is a budgeting app. It does not move, hold or launder money.<br>&copy; 2026 615 Media Group, LLC &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot; <a href="/diy">Use your own keys</a> &middot; <a href="mailto:support@laundering.app">support@laundering.app</a></footer>
   </div>
+  <script src="washer.js"></script>
 </body>
 </html>
