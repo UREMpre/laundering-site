@@ -147,17 +147,21 @@
             /* from the screen's edge to the content column's edge (the column is 68rem wide at most, centred) */
             --bl: calc(max(0px, (100vw - 68rem) / 2) + var(--gl)); --br: calc(max(0px, (100vw - 68rem) / 2) + var(--gr)); }
     * { box-sizing: border-box; }
-    /* The background is on html so it also paints under the safe areas (viewport-fit=cover). */
-    html {
-      -webkit-text-size-adjust: 100%; min-height: 100%; background-color: #0f1020;
+    /* The iPhone Duo's camera strip is Safari's own (laundering.app/duo-test, Nov 25: no safe area there, and Safari tints it
+       from the html background COLOUR). So html carries only that colour, #251a57, and the page's picture is on body, with a
+       soft purple glow down the right-hand edge (.edge-glow) that is exactly #251a57 at the edge: the strip reads as part of
+       the page instead of a black bar (founder: "Add a soft glow"). */
+    html { -webkit-text-size-adjust: 100%; min-height: 100%; background-color: #251a57; }
+    body { margin: 0; min-height: 100vh; font: 17px/1.55 -apple-system, system-ui, "Segoe UI", sans-serif; color: var(--ink); overflow-x: clip;
       background:
         radial-gradient(60rem 40rem at 85% -10%, #b4551f 0%, transparent 60%),
         radial-gradient(50rem 40rem at -10% 35%, #12705f 0%, transparent 60%),
         radial-gradient(45rem 35rem at 90% 55%, #7a2f6b 0%, transparent 60%),
         radial-gradient(50rem 40rem at 100% 75%, #4a2bb0 0%, transparent 60%),
-        #0f1020;
-    }
-    body { margin: 0; font: 17px/1.55 -apple-system, system-ui, "Segoe UI", sans-serif; color: var(--ink); overflow-x: clip; }
+        #0f1020; }
+    /* #4a2bb0 at 38% over #0f1020 = #251a57 at the very edge, fading out inward. Behind everything (money z 1, text z 2). */
+    .edge-glow { position: fixed; top: 0; bottom: 0; right: 0; width: clamp(110px, 38vw, 520px); z-index: 0; pointer-events: none;
+                 background: linear-gradient(to left, rgba(74,43,176,.38), rgba(74,43,176,.16) 35%, transparent); }
     a { color: var(--mint); }
     .wrap { width: min(68rem, 100%); margin: 0 auto; padding: 0 var(--gr) 0 var(--gl); }
     header.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2.5rem; align-items: center; padding: 4.5rem 0 3rem; }
@@ -246,6 +250,7 @@
   <noscript><style>.hero .art { display: none; } .flow { display: none; }</style></noscript>
 </head>
 <body>
+  <div class="edge-glow" aria-hidden="true"></div>
   <div class="getbar" id="getbar" aria-hidden="true">
     <img src="/icon-192.png" width="40" height="40" alt="">
     <div class="t"><b>Money Laundering</b><span>Budget, bills &amp; a judgy cat</span></div>
