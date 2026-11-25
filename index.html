@@ -13,6 +13,7 @@
   <meta name="keywords" content="budget app, budgeting app, budget planner, expense tracker, spending tracker, money manager, personal finance app, daily budget, paycheck budget, bill tracker, subscription tracker, savings goals, cash flow forecast, couples budget, YNAB alternative, Mint alternative, budget app for iPhone, iPhone 18 Pro, iPhone Duo, Apple Watch budget">
   <link rel="canonical" href="https://laundering.app/">
   <meta name="theme-color" content="#0f1020">
+  <meta name="color-scheme" content="dark">
   <meta name="apple-itunes-app" content="app-id=6831441351">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Money Laundering">
@@ -184,7 +185,9 @@
     /* The money's big field (washer.js makes it): the page's full width from the top down to the carousel, over the washer
        and under the words. It takes no touch: presses still land on the washer's canvas, everything else on the page. */
     canvas.money-field { position: absolute; left: 0; top: 0; width: 100%; height: 0; z-index: 1; pointer-events: none; display: block; }
-    header.hero > div:first-child, section { position: relative; z-index: 2; }
+    /* The faint drift down the whole page: one canvas the size of the screen, fixed, edge to edge (safe areas included). */
+    canvas.money-ambient { position: fixed; inset: 0; width: 100%; min-width: 100vw; height: 100%; z-index: 1; pointer-events: none; display: block; }
+    header.hero > div:first-child, section, footer { position: relative; z-index: 2; }
     /* Our own download bar: Safari's app banner scrolls away, this one slides in once the App Store button is out of sight. */
     .getbar { position: fixed; z-index: 20; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: .75rem;
               padding: calc(.55rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) .55rem max(1rem, env(safe-area-inset-left));

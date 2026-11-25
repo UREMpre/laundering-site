@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#ff00aa">
+  <title>Screen edge test</title>
+  <!-- A check for the founder's iPhone Duo (Nov 25): does Safari count the strip down the right side as a safe area we
+       can paint under, or keep it for itself? Not linked from anywhere, not in the sitemap. -->
+  <style>
+    /* The root's background COLOUR is cyan and theme-color is magenta, so a strip Safari tints for itself shows which it uses. */
+    html { min-height: 100%; background: #00e5ff linear-gradient(90deg, #ff0080, #ffb000 25%, #00e070 50%, #00b0ff 75%, #a040ff); }
+    body { margin: 0; min-height: 100vh; font: 600 22px/1.35 -apple-system, system-ui, sans-serif; color: #000; }
+    #probe { position: fixed; visibility: hidden; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    #vw { position: absolute; top: 0; left: 0; width: 100vw; height: 1px; visibility: hidden; }
+    .edge { position: fixed; top: 0; bottom: 0; width: 2px; background: red; z-index: 5; }
+    #l { left: 0; } #r { right: 0; } #v { left: calc(100vw - 2px); background: #000; }
+    .safe { position: fixed; top: env(safe-area-inset-top); bottom: env(safe-area-inset-bottom); left: env(safe-area-inset-left);
+            right: env(safe-area-inset-right); outline: 2px dashed #fff; pointer-events: none; z-index: 4; }
+    pre { margin: 0; padding: calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 12px) 12px calc(env(safe-area-inset-left) + 12px);
+          font: 700 clamp(15px, 4.6vw, 26px)/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere;
+          text-shadow: 0 0 6px #fff, 0 0 2px #fff; }
+  </style>
+</head>
+<body>
+  <div id="probe"></div><div id="vw"></div>
+  <div class="edge" id="l"></div><div class="edge" id="r"></div><div class="edge" id="v"></div><div class="safe"></div>
+  <pre id="out">…</pre>
+  <script>
+    (function () {
+      function show() {
+        var p = getComputedStyle(document.getElementById('probe')), v = window.visualViewport;
+        var r = function (x) { return Math.round(x * 100) / 100; };
+        document.getElementById('out').textContent = [
+          'Red lines: left and right edge of the page',
+          'Black line: 100vw',
+          'Dashed white: inside the safe area',
+          'A strip in cyan = Safari tints it from the page background colour; magenta = from theme-color',
+          '',
+          'innerWidth x innerHeight: ' + innerWidth + ' x ' + innerHeight,
+          'clientWidth x clientHeight: ' + document.documentElement.clientWidth + ' x ' + document.documentElement.clientHeight,
+          '100vw: ' + r(document.getElementById('vw').getBoundingClientRect().width),
+          'visualViewport: ' + (v ? r(v.width) + ' x ' + r(v.height) + ', offsetLeft ' + r(v.offsetLeft) + ', offsetTop ' + r(v.offsetTop) + ', scale ' + r(v.scale) : 'none'),
+          'screen: ' + screen.width + ' x ' + screen.height + '   orientation: ' + ((screen.orientation && screen.orientation.type) || '?'),
+          'devicePixelRatio: ' + devicePixelRatio,
+          'safe area top: ' + p.paddingTop,
+          'safe area right: ' + p.paddingRight,
+          'safe area bottom: ' + p.paddingBottom,
+          'safe area left: ' + p.paddingLeft,
+          '',
+          navigator.userAgent
+        ].join('\n');
+      }
+      show();
+      addEventListener('resize', show);
+      if (window.visualViewport) visualViewport.addEventListener('resize', show);
+      addEventListener('orientationchange', function () { setTimeout(show, 300); });
+    })();
+  </script>
+</body>
+</html>
