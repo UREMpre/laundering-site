@@ -239,24 +239,14 @@
   });
   root.addEventListener("focusin", function () { held = true; });
   root.addEventListener("focusout", function (e) { if (!root.contains(e.relatedTarget)) { held = hovering; holdFor(3000); } });
-  var prev = root.querySelector("[data-flow=prev]"), next = root.querySelector("[data-flow=next]"), play = root.querySelector("[data-flow=play]");
-  prev.addEventListener("click", function () { stepBy(-1); holdFor(5000); });
-  next.addEventListener("click", function () { stepBy(1); holdFor(5000); });
-  function setPlay() {
-    play.setAttribute("aria-label", stopped ? "Play the cards" : "Pause the cards");
-    play.innerHTML = stopped
-      ? '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>'
-      : '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2.5h3v11H4zm5 0h3v11H9z"/></svg>';
-  }
-  play.addEventListener("click", function () { stopped = !stopped; setPlay(); if (!stopped) { holdFor(0); schedule(); } else clearTimeout(timer); });
-  setPlay();
+  // No buttons under the deck (founder, Nov 25: "Remove arrows"): touch, hover or focus pauses it; ←/→ step it.
 
   // Only runs while on screen and while the tab is showing.
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(function (es) { visible = es[0].isIntersecting; if (visible) schedule(); }, { threshold: 0.35 }).observe(stage);
   } else visible = true;
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { holdFor(1200); schedule(); } });
-  if (reduce && reduce.addEventListener) reduce.addEventListener("change", function () { if (calm()) { stopped = true; clearTimeout(timer); setPlay(); } });
+  if (reduce && reduce.addEventListener) reduce.addEventListener("change", function () { if (calm()) { stopped = true; clearTimeout(timer); } });
 
   var rz = 0;
   window.addEventListener("resize", function () { cancelAnimationFrame(rz); rz = requestAnimationFrame(function () { measure(); fitNames(); render(); }); });
