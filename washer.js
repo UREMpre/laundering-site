@@ -31,7 +31,10 @@
  * a bigger, transparent-edged box (440 x 400) with the washer and Mouse inside it, twice the money, and the money
  * reacting to a finger as on the app's lock screen (MoneySwirl.swift: LockTouch and MoneyFlow.step / scatter / fling).
  * `touch` = a press or drag shoves and drags the notes, a tap scatters them, a flick throws them; `hover` = a mouse
- * with no button down pushes them too, more gently. The loop also pauses while the canvas is off screen. Without
+ * with no button down pushes them too, more gently (anywhere over the header). Since Nov 25 the play field's money is not
+ * drawn in the washer's box but on a page-wide canvas over the header and down to the carousel (see "the big money
+ * field" below): a vortex from the header's top, sides and below, and a faint drift under the washer. The loop also
+ * pauses while that field is off screen. Without
  * `data-play` (u.html, r.html) nothing of this exists and the picture is exactly as before.
  */
 (function () {
@@ -889,8 +892,9 @@
                 flickReach: 230 * TS, flickSpeed: 450 * TS, flickCarry: .9, flickMax: 2600 * TS, hover: .35 };
   var finger = null;                                 // { x, y, vx, vy, seen (s), power } in field units, or null
   function nowS() { return performance.now() / 1000; }
+  function touchable() { return FIELD ? FIELD.notes.concat(FIELD.drift) : notes; }
   function scatter(px, py) {                         // MoneyFlow.scatter: a tap knocks the notes near it away
-    notes.forEach(function (n) {
+    touchable().forEach(function (n) {
       var dx = n.x - px, dy = n.y - py, d = Math.max(1, Math.hypot(dx, dy));
       if (d >= TOUCH.tapReach) return;
       var k = Math.pow(1 - d / TOUCH.tapReach, .7), a = Math.atan2(dy, dx) + (Math.random() - .5);
@@ -899,7 +903,7 @@
     });
   }
   function fling(px, py, vx, vy) {                   // MoneyFlow.fling: a flick throws the notes near where it let go
-    notes.forEach(function (n) {
+    touchable().forEach(function (n) {
       var d = Math.hypot(n.x - px, n.y - py);
       if (d >= TOUCH.flickReach) return;
       var k = 1 - d / TOUCH.flickReach, dx = vx * TOUCH.flickCarry * k, dy = vy * TOUCH.flickCarry * k, sp = Math.hypot(dx, dy);
@@ -1016,6 +1020,151 @@
     c.globalCompositeOperation = 'destination-out'; path(c); fillC(c, WHITE, a); c.globalCompositeOperation = 'source-over';
   }
 
+  // ---- the big money field (data-play only; founder, Nov 25: "make the money vortex bigger so that it comes in from the
+  // upper text row and below, with more subtle floating money below") -------------------------------------------------
+  // In the play field the money is not drawn on the washer's canvas but on one canvas laid over the top of the page
+  // (`canvas.money-field`, absolute, the page's full width, from the top down to the Cover Flow carousel). It sits OVER
+  // the washer (the money is in front of the machine, as on the lock screen) and UNDER the header's words and the
+  // sections (index.html gives those z-index 2). It takes no pointer: the finger still goes to the washer's canvas.
+  // Two flocks, same painter (`piece`), same stream as MoneyFlow.step:
+  //   - the vortex: notes born at the header's top (the upper text row), at both sides and below the washer, curving
+  //     into the door; far away they are smaller and fainter, so they read as arriving from a distance;
+  //   - the drift (MoneyFlowAmbient): a few faint notes below the washer, floating slowly with a faint pull towards it.
+  // Field units are CSS pixels of the money canvas. `k` = how big the washer's 440 x 400 box is drawn on the page.
+  var FIELD = null;
+  function makeField() {
+    var hero = art.closest ? art.closest('.hero') : null;
+    if (!hero || !document.body) return null;
+    var cv = document.createElement('canvas');
+    cv.className = 'money-field'; cv.setAttribute('aria-hidden', 'true');
+    document.body.insertBefore(cv, document.body.firstChild);
+    var f = { canvas: cv, ctx: cv.getContext('2d'), hero: hero, w: 0, h: 0, s: 1, k: 1, top: 0, door: { x: 0, y: 0 },
+              vTop: 0, vBottom: 0, aTop: 0, aBottom: 0, reach: 500, text: [], block: [], notes: [], drift: [], frames: 0 };
+    if (!f.ctx) { cv.parentNode.removeChild(cv); return null; }
+    fieldGeometry(f);
+    var narrow = f.w < 600;
+    for (var i = 0, nv = narrow ? 50 : 62; i < nv; i++) f.notes.push(vortexBorn(f, true, i % 5 === 2));
+    for (var j = 0, nd = narrow ? 14 : 18; j < nd; j++) f.drift.push(driftBorn(f, true, j % 6 === 4));
+    return f;
+  }
+  function relRect(el, o) {
+    var r = el.getBoundingClientRect();
+    return { l: r.left - o.left, t: r.top - o.top, r: r.right - o.left, b: r.bottom - o.top };
+  }
+  // Where everything is, in the field's own pixels. Run at start, on resize and every half second (fonts, the flow's
+  // pictures and the Duo's fold all move things), so the door follows the washer.
+  function fieldGeometry(f) {
+    var cv = f.canvas, vh = window.innerHeight || 800;
+    var o0 = cv.getBoundingClientRect();
+    var wr = relRect(canvas, o0), hr = relRect(f.hero, o0);
+    var flow = document.querySelector('.flow');
+    var stop = flow ? relRect(flow, o0).t - 8 : hr.b + vh;
+    stop = Math.max(wr.b + 220, Math.min(stop, hr.b + 1.3 * vh));
+    var w = Math.max(1, Math.round(o0.width || document.documentElement.clientWidth || 400)), h = Math.round(stop);
+    if (Math.abs(h - f.h) > 1) cv.style.height = h + 'px';
+    var s = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    if (w * h * s * s > 9e6) s = Math.max(1, Math.sqrt(9e6 / (w * h)));   // a very big desktop field: fewer backing pixels
+    var bw = Math.round(w * s), bh = Math.round(h * s);
+    if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+    f.w = w; f.h = h; f.s = s; f.top = o0.top + (window.scrollY || window.pageYOffset || 0);
+    f.k = Math.max(.5, (wr.r - wr.l) / LW);
+    f.door = { x: wr.l + DOOR.x * f.k, y: wr.t + DOOR.y * f.k };
+    f.vTop = Math.max(0, hr.t + 8);                       // the vortex: the header, down to a little below the washer
+    f.vBottom = Math.min(h - 20, wr.b + 70 * f.k);
+    f.aTop = wr.b - 50 * f.k;                             // the drift: from the washer's foot down to the carousel
+    f.aBottom = h;
+    var d = f.door;
+    f.reach = Math.max(Math.hypot(d.x, d.y - f.vTop), Math.hypot(w - d.x, d.y - f.vTop), Math.hypot(d.x, f.vBottom - d.y), Math.hypot(w - d.x, f.vBottom - d.y));
+    var col = f.hero.firstElementChild;
+    f.text = []; f.block = [];
+    if (col && col !== art) {
+      Array.prototype.forEach.call(col.querySelectorAll('.eyebrow, h1, .lede, .fine'), function (el) { f.text.push(relRect(el, o0)); });
+      Array.prototype.forEach.call(col.querySelectorAll('a, button'), function (el) { f.block.push(relRect(el, o0)); });
+    }
+  }
+  function vortexBorn(f, anywhere, coin) {
+    var x, y, r = rnd();
+    if (anywhere) { x = between(0, f.w); y = between(f.vTop, f.vBottom); }
+    else if (r < .42) { x = between(-10, f.w + 10); y = f.vTop + between(-6, 70); }                  // the upper text row
+    else if (r < .72) { x = r < .57 ? -16 : f.w + 16; y = between(f.vTop, f.vBottom); }               // the sides
+    else { x = between(f.w * .05, f.w * .95); y = f.vBottom + between(-30, 10); }                     // below the washer
+    var n = born(x, y); n.age = anywhere ? 9 : 0; n.coin = !!coin; if (coin) n.scale *= .9;
+    return n;
+  }
+  function driftBorn(f, anywhere, coin) {
+    var x = between(-10, f.w + 10), y = anywhere ? between(f.aTop + 40, f.aBottom - 40) : between(f.aTop + 120, f.aBottom);
+    if (!anywhere && rnd() < .5) x = rnd() < .5 ? -14 : f.w + 14;
+    var n = born(x, y); n.age = anywhere ? 9 : 0; n.coin = !!coin; if (coin) n.scale *= .9;
+    n.ph = between(0, 6.2832); n.fq = between(.07, .16); n.alpha = between(.7, 1);
+    return n;
+  }
+  // The vortex rides MoneyFlow.step's stream, scaled to the washer on the page; the drift is the ambient mode: a slow
+  // wander of its own with only a faint pull and swirl towards the door, and a little upward, so it feeds the washer.
+  function fieldStep(f, dt) {
+    var k = f.k, d = f.door, i, n;
+    for (i = 0; i < f.notes.length; i++) {
+      n = f.notes[i];
+      var dx = d.x - n.x, dy = d.y - n.y, r = Math.max(1, Math.hypot(dx, dy));
+      var nx = dx / r, ny = dy / r, tx = ny, ty = -nx;
+      var c = 1 - Math.min(1, r / f.reach);
+      var around = (22 + 190 * c * c) * k * Math.min(1, r / (46 * k));
+      var pull = (50 + 70 * c) * k;
+      n.x += (tx * around + nx * pull) * dt; n.y += (ty * around + ny * pull) * dt;
+      n.angle += n.spin * dt; n.flip += dt * (1 + c * c * 5); n.age += dt;
+      n.spin += (n.coin ? .4 : .9) * dt * (i % 2 ? -1 : 1);
+      if (Math.abs(n.spin) > 2.4) n.spin *= Math.pow(.5, dt);
+      push(n, dt);
+      if (Math.hypot(d.x - n.x, d.y - n.y) < 5 * k || n.x < -90 || n.x > f.w + 90 || n.y < f.vTop - 140 || n.y > f.h + 60) f.notes[i] = vortexBorn(f, false, n.coin);
+    }
+    for (i = 0; i < f.drift.length; i++) {
+      n = f.drift[i];
+      var ex = d.x - n.x, ey = d.y - n.y, er = Math.max(1, Math.hypot(ex, ey)), t = clock;
+      var wx = Math.sin(t * n.fq * 6.2832 + n.ph) * 13, wy = Math.cos(t * n.fq * 4.4 + n.ph * 1.7) * 7 - 5;
+      n.x += (wx + ex / er * 7 + ey / er * 6) * k * dt; n.y += (wy + ey / er * 7 - ex / er * 6) * k * dt;
+      n.angle += n.spin * .5 * dt; n.flip += dt * .6; n.age += dt;
+      n.spin += .3 * dt * (i % 2 ? -1 : 1); if (Math.abs(n.spin) > 1.2) n.spin *= Math.pow(.5, dt);
+      push(n, dt);
+      if (n.y < f.aTop - 10 || n.y > f.aBottom + 60 || n.x < -60 || n.x > f.w + 60) f.drift[i] = driftBorn(f, false, n.coin);
+    }
+  }
+  // 0 deep inside the header's words, 1 at 24 px or more clear of them.
+  function clearOf(rects, x, y, pad) {
+    var m = 1;
+    for (var i = 0; i < rects.length; i++) {
+      var q = rects[i], ox = Math.max(q.l - x, 0, x - q.r), oy = Math.max(q.t - y, 0, y - q.b);
+      m = Math.min(m, clamp((Math.hypot(ox, oy) - pad) / 24, 0, 1));
+    }
+    return m;
+  }
+  function drawField(f) {
+    var g = f.ctx, k = f.k, d = f.door, i, n;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, f.canvas.width, f.canvas.height); g.setTransform(f.s, 0, 0, f.s, 0, 0);
+    var sy0 = (window.scrollY || window.pageYOffset || 0) - f.top, vis0 = sy0 - 60, vis1 = sy0 + (window.innerHeight || 800) + 60;
+    function put(n, a, sc, idx) {
+      var sy = sc * (.55 + .45 * Math.abs(Math.cos(n.flip)));
+      g.save(); g.translate(n.x, n.y); g.rotate(n.angle); g.scale(sc, sy); piece(g, null, null, n.coin, idx, a); g.restore();
+    }
+    for (i = 0; i < f.drift.length; i++) {                        // the faint drift first, under the vortex
+      n = f.drift[i];
+      if (n.y < vis0 || n.y > vis1) continue;
+      var a0 = n.alpha * .36 * clamp((n.y - f.aTop) / 90, 0, 1) * clamp((f.aBottom - n.y) / 150, 0, 1) * Math.min(1, n.age / 1.6);
+      if (a0 < .01) continue;
+      put(n, a0, n.scale * .85 * KNOTE * k, i + 3);
+    }
+    for (i = 0; i < f.notes.length; i++) {
+      n = f.notes[i];
+      if (n.y < vis0 || n.y > vis1) continue;
+      if (f.block.length && clearOf(f.block, n.x, n.y, 4) < 1) continue;   // never over (behind) the App Store button
+      var r = Math.hypot(n.x - d.x, n.y - d.y), c = 1 - Math.min(1, r / f.reach);
+      var tf = clearOf(f.text, n.x, n.y, -4);                       // behind the words: fainter and a little smaller
+      var a = n.alpha * clamp((r - 3 * k) / (11 * k), 0, 1) * Math.min(1, n.age / .8) * (.5 + .5 * Math.sqrt(c)) * (.42 + .58 * tf);
+      if (a < .01) continue;
+      var sc = n.scale * (.28 + .72 * Math.min(1, r / (60 * k))) * KNOTE * k * (.7 + .3 * c) * (.85 + .15 * tf);
+      put(n, a, sc, i);
+    }
+  }
+  if (PLAY) { try { FIELD = makeField(); } catch (e) { FIELD = null; } }
+
   // Mouse alone: the money goes round instead, each piece on its own ring at its own pace (ProfileMoney.spot), LOW in
   // front of Mouse and HIGH behind. Eleven notes and three coins, as in the app.
   var ORBIT_NOTES = 11, ORBIT_COUNT = 14;
@@ -1068,7 +1217,7 @@
       drawMachine(main, l, t, live);
       [main].concat(l ? [l] : []).forEach(function (c) { c.restore(); });
       if (place) cat(place, t, live, l, k);          // Mouse: in front of the machine, under the money, never lifted
-      drawMoney(main, l, k);
+      if (FIELD) drawField(FIELD); else drawMoney(main, l, k);   // the play field's money is on its own big canvas
     }
     if (hdr) {
       try { hdr.draw(t); } catch (e) { var h = hdr; hdr = null; h.off(); info.approach = 'plain 2D canvas (HDR layer failed: ' + (e && e.message || e) + ')'; report(); return; }
@@ -1204,6 +1353,7 @@
       'canvas configuration: ' + (info.configured || '-'),
       'CSS dynamic-range-limit known: ' + info.limitProperty + '   lifted by ' + GAIN_MACHINE + 'x (machine), ' + GAIN_MONEY_LO + 'x to ' + GAIN_MONEY_HI + 'x (money) in encoded display-p3',
       'devicePixelRatio: ' + (window.devicePixelRatio || 1) + '   backing: ' + W + 'x' + H + '   reduced motion: ' + STILL,
+      FIELD ? 'money field: ' + FIELD.canvas.width + 'x' + FIELD.canvas.height + ' backing, ' + FIELD.notes.length + ' vortex + ' + FIELD.drift.length + ' drift notes, frame ' + (info.frameMs == null ? '-' : info.frameMs.toFixed(2) + ' ms') : '',
       'no way found to read the headroom itself: the browser clips the lift at what the screen has',
       info.notes.join('\n'),
       'picture: ' + JSON.stringify(P),
@@ -1217,8 +1367,14 @@
     rafId = 0;
     if (!running) return;
     var dt = Math.min(1 / 20, Math.max(0, (now - last) / 1000)); last = now;
-    clock += dt; step(dt);
+    clock += dt;
+    var t0 = DEBUG ? performance.now() : 0;
+    if (FIELD) { if (++FIELD.frames % 30 === 0) fieldGeometry(FIELD); fieldStep(FIELD, dt); } else step(dt);
     frame(clock, true);
+    if (DEBUG) {                                     // ?hdr=debug: what a frame costs on the main thread (step + draw)
+      info.frameMs = info.frameMs == null ? performance.now() - t0 : info.frameMs * .95 + (performance.now() - t0) * .05;
+      if (FIELD && FIELD.frames % 60 === 0) report();
+    }
     rafId = requestAnimationFrame(tick);
   }
   var onScreen = true;                               // the play field pauses while it is scrolled out of view
@@ -1226,9 +1382,14 @@
   function stop() { running = false; if (rafId) cancelAnimationFrame(rafId); rafId = 0; }
 
   document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else start(); });   // a hidden tab stops drawing
+  if (FIELD) {                                       // the field follows the page's layout (a turn, a fold, the fonts, pictures)
+    var relayout = function () { fieldGeometry(FIELD); if (!running) frame(0, !STILL); };
+    window.addEventListener('resize', relayout);
+    window.addEventListener('load', relayout);
+  }
 
   if (STILL) {                                       // Reduce Motion: one still frame, money caught mid-stream
-    for (var w = 0; w < 75; w++) step(1 / 30);
+    for (var w = 0; w < 75; w++) { if (FIELD) fieldStep(FIELD, 1 / 30); else step(1 / 30); }
     frame(0, false);
   } else {
     frame(0, true);                                  // first picture at once, in ordinary colours
@@ -1245,10 +1406,11 @@
       new IntersectionObserver(function (es) {
         onScreen = es[es.length - 1].isIntersecting;
         if (!onScreen) stop(); else if (!document.hidden) start();
-      }).observe(canvas);
+      }).observe(FIELD ? FIELD.canvas : canvas);
     }
     var down = null, trail = [];                     // the press (where and when it began) and the last ~100 ms of moves
     var here = function (e) {
+      if (FIELD) { var o = FIELD.canvas.getBoundingClientRect(); return { x: e.clientX - o.left, y: e.clientY - o.top, t: e.timeStamp / 1000 }; }
       var r = canvas.getBoundingClientRect();
       return { x: (e.clientX - r.left) * LW / Math.max(1, r.width), y: (e.clientY - r.top) * LH / Math.max(1, r.height), t: e.timeStamp / 1000 };
     };
@@ -1266,8 +1428,12 @@
     });
     canvas.addEventListener('pointermove', function (e) {
       if (down && e.pointerId === down.id) { report_(here(e), 1); return; }
-      if (!down && HOVER && e.pointerType === 'mouse' && !e.buttons) report_(here(e), TOUCH.hover);
+      if (!FIELD && !down && HOVER && e.pointerType === 'mouse' && !e.buttons) report_(here(e), TOUCH.hover);
     });
+    if (FIELD && HOVER) {                            // with the big field a mouse pushes the money anywhere over the header
+      FIELD.hero.addEventListener('pointermove', function (e) { if (!down && e.pointerType === 'mouse' && !e.buttons) report_(here(e), TOUCH.hover); });
+      FIELD.hero.addEventListener('pointerleave', function (e) { if (!down && e.pointerType === 'mouse') finger = null; });
+    }
     var end = function (e, cancelled) {
       if (!down || e.pointerId !== down.id) return;
       var p = here(e), was = down; down = null;
@@ -1282,7 +1448,7 @@
     };
     canvas.addEventListener('pointerup', function (e) { end(e, false); });
     canvas.addEventListener('pointercancel', function (e) { end(e, true); });   // the page took the touch to scroll
-    canvas.addEventListener('pointerleave', function (e) { if (!down && e.pointerType === 'mouse') finger = null; });
+    canvas.addEventListener('pointerleave', function (e) { if (!FIELD && !down && e.pointerType === 'mouse') finger = null; });
   }
 
   // ---- someone's own look ------------------------------------------------------------------------------------------
