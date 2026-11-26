@@ -23,6 +23,13 @@ Made by 615 Media Group, LLC. App Store: https://apps.apple.com/app/id6831441351
 ## Compared with other budgeting apps
 A budget app for people who want YNAB- or Mint-style tracking with a daily number and something fun to come back to. iPhone only.
 
+## Privacy
+- Transactions and balances stay on the iPhone and in the user's own iCloud; bank sync through the service passes data through without storing it.
+- No ads, no third-party advertising or analytics software, no tracking, nothing sold. The App Store privacy label lists App Functionality as the only purpose.
+- Household sharing by AirDrop (nothing passes through the service) or a sealed link held at most 15 minutes, then deleted.
+- How the big budget apps' App Store privacy labels compare (advertising and tracking): https://laundering.app/budget-app-privacy
+- Plain-language privacy: https://laundering.app/private-by-design
+
 ## Links
 - Home: https://laundering.app/
 - Privacy policy: https://laundering.app/privacy
